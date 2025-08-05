@@ -14,11 +14,17 @@ jobs:
     
     - uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.19.0'
+        flutter-version: '3.32.5'
         channel: 'stable'
     
-    - run: flutter pub get
-    - run: flutter build web --release
+    - name: Get Flutter dependencies
+      run: flutter pub get
+      
+    - name: Build Flutter web app
+      run: flutter build web --release
+      
+    - name: List build directory
+      run: ls -la build/web/
     
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
