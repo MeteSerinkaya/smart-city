@@ -3,7 +3,7 @@ class ApiConstants {
   static const String devBaseUrl = 'http://localhost:5280/api';
   
   // Production - Backend URL'inizi buraya yazın
-  static const String prodBaseUrl = 'https://your-backend-url.com/api';
+  static const String prodBaseUrl = 'https://your-railway-app.railway.app/api';
   
   // Environment'a göre URL seçimi
   static const String baseUrl = String.fromEnvironment(
