@@ -2034,10 +2034,11 @@ class _ContentSectionsWidgetState extends State<_ContentSectionsWidget> {
             ),
           ),
           const SizedBox(height: 32),
-          // Content Container with Dark Background
+          // Content Container with Full Width Dark Background
           Container(
             color: const Color(0xFF2C2C2C),
-            child: Padding(padding: const EdgeInsets.all(24), child: child),
+            width: double.infinity, // Full width
+            child: child,
           ),
         ],
       ),

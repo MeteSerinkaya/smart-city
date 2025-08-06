@@ -140,44 +140,41 @@ class _AnnouncementViewState extends State<AnnouncementView> {
     final isMobile = screenWidth < 768;
     final isTablet = screenWidth < 1024;
 
-    return Container(
-      color: const Color(0xFF2C2C2C), // Full width dark background
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 64, vertical: isMobile ? 32 : 80),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Ana Başlık
-              Text(
-                'DUYURULAR',
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: isMobile ? 28 : 36,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white, // Changed to white for better contrast
-                ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 1200),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 64, vertical: isMobile ? 32 : 80),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Ana Başlık
+            Text(
+              'DUYURULAR',
+              style: TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: isMobile ? 28 : 36,
+                fontWeight: FontWeight.w700,
+                color: Colors.white, // Changed to white for better contrast
               ),
-              const SizedBox(height: 32),
+            ),
+            const SizedBox(height: 32),
 
-              // Duyuru Listesi
-              ...announcements.take(6).map((announcement) {
-                final index = announcements.indexOf(announcement);
-                return _buildAnnouncementItem(announcement, index, isMobile);
-              }),
+            // Duyuru Listesi
+            ...announcements.take(6).map((announcement) {
+              final index = announcements.indexOf(announcement);
+              return _buildAnnouncementItem(announcement, index, isMobile);
+            }),
 
-              const SizedBox(height: 48),
+            const SizedBox(height: 48),
 
-              // TÜMÜNÜ GÖRÜNTÜLE Bölümü
-              _buildSeeAllSection(isMobile),
+            // TÜMÜNÜ GÖRÜNTÜLE Bölümü
+            _buildSeeAllSection(isMobile),
 
-              const SizedBox(height: 32),
+            const SizedBox(height: 32),
 
-              // Footer Text
-              _buildFooterText(),
-            ],
-          ),
+            // Footer Text
+            _buildFooterText(),
+          ],
         ),
       ),
     );
