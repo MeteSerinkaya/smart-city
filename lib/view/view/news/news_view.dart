@@ -3,6 +3,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_city/view/viewmodel/news/news_view_model.dart';
 import 'package:smart_city/view/authentication/test/model/newsmodel/news_model.dart';
+import 'package:smart_city/core/components/loading/smart_loading_widget.dart';
 
 class NewsView extends StatefulWidget {
   const NewsView({super.key});
@@ -30,37 +31,23 @@ class _NewsViewState extends State<NewsView> {
       builder: (context) {
         final viewModel = Provider.of<NewsViewModel>(context, listen: false);
         
-        if (viewModel.isLoading) {
-          return _buildLoadingState();
-        }
-        
-        if (viewModel.newsList == null || viewModel.newsList!.isEmpty) {
-          return _buildEmptyState();
-        }
-        
-        return _buildNewsList(viewModel.newsList!);
+        return SmartLoadingWidget(
+          isLoading: viewModel.isLoading,
+          hasError: viewModel.hasError,
+          errorMessage: viewModel.errorMessage,
+          onRetry: viewModel.retry,
+          child: _buildContent(viewModel),
+        );
       },
     );
   }
 
-  Widget _buildLoadingState() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        children: [
-          const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Haberler yükleniyor...',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF6B7280),
-            ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildContent(NewsViewModel viewModel) {
+    if (viewModel.newsList == null || viewModel.newsList!.isEmpty) {
+      return _buildEmptyState();
+    }
+    
+    return _buildNewsList(viewModel.newsList!);
   }
 
   Widget _buildEmptyState() {

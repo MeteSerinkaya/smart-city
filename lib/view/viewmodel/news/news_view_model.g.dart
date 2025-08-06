@@ -27,6 +27,42 @@ mixin _$NewsViewModel on _NewsViewModelBase, Store {
     });
   }
 
+  late final _$hasErrorAtom = Atom(
+    name: '_NewsViewModelBase.hasError',
+    context: context,
+  );
+
+  @override
+  bool get hasError {
+    _$hasErrorAtom.reportRead();
+    return super.hasError;
+  }
+
+  @override
+  set hasError(bool value) {
+    _$hasErrorAtom.reportWrite(value, super.hasError, () {
+      super.hasError = value;
+    });
+  }
+
+  late final _$errorMessageAtom = Atom(
+    name: '_NewsViewModelBase.errorMessage',
+    context: context,
+  );
+
+  @override
+  String get errorMessage {
+    _$errorMessageAtom.reportRead();
+    return super.errorMessage;
+  }
+
+  @override
+  set errorMessage(String value) {
+    _$errorMessageAtom.reportWrite(value, super.errorMessage, () {
+      super.errorMessage = value;
+    });
+  }
+
   late final _$newsListAtom = Atom(
     name: '_NewsViewModelBase.newsList',
     context: context,
@@ -85,10 +121,41 @@ mixin _$NewsViewModel on _NewsViewModelBase, Store {
     return _$deleteNewsAsyncAction.run(() => super.deleteNews(id));
   }
 
+  late final _$_NewsViewModelBaseActionController = ActionController(
+    name: '_NewsViewModelBase',
+    context: context,
+  );
+
+  @override
+  void clearError() {
+    final _$actionInfo = _$_NewsViewModelBaseActionController.startAction(
+      name: '_NewsViewModelBase.clearError',
+    );
+    try {
+      return super.clearError();
+    } finally {
+      _$_NewsViewModelBaseActionController.endAction(_$actionInfo);
+    }
+  }
+
+  @override
+  void retry() {
+    final _$actionInfo = _$_NewsViewModelBaseActionController.startAction(
+      name: '_NewsViewModelBase.retry',
+    );
+    try {
+      return super.retry();
+    } finally {
+      _$_NewsViewModelBaseActionController.endAction(_$actionInfo);
+    }
+  }
+
   @override
   String toString() {
     return '''
 isLoading: ${isLoading},
+hasError: ${hasError},
+errorMessage: ${errorMessage},
 newsList: ${newsList}
     ''';
   }

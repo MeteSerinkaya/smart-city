@@ -1,9 +1,6 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
-import 'package:smart_city/core/base/model/base_model.dart';
-import 'package:smart_city/core/constants/enums/locale_keys_enum.dart';
-import 'package:smart_city/core/init/cache/locale_manager.dart';
+import 'package:smart_city/core/base/base_model.dart';
+import 'dart:io';
 
 class NetworkManager {
   static NetworkManager? _instance;
@@ -12,78 +9,67 @@ class NetworkManager {
     return _instance!;
   }
 
-  NetworkManager._init() {
-    final baseOptions = BaseOptions(
-      baseUrl: "https://localhost:7276/api/",
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
-      headers: {"val": LocaleManager.instance.getStringValue(PreferencesKeys.TOKEN) ?? ""},
-    );
+  late final Dio dio;
 
-    dio = Dio(baseOptions);
+  NetworkManager._init() {
+    dio = Dio(
+      BaseOptions(
+        baseUrl: 'https://localhost:7001/api/',
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 15),
+        sendTimeout: const Duration(seconds: 10),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
     // Retry interceptor ekle
     dio.interceptors.add(
       RetryInterceptor(
         dio: dio,
-        logPrint: print,
-        retries: 3,
+        logPrint: (message) => print('NetworkManager: $message'),
+        retries: 2,
         retryDelays: const [
-          Duration(seconds: 1),
           Duration(seconds: 2),
-          Duration(seconds: 3),
+          Duration(seconds: 4),
         ],
       ),
     );
 
+    // Error interceptor ekle
     dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
-          final token = LocaleManager.instance.getStringValue(PreferencesKeys.TOKEN) ?? "";
-          if (token.isNotEmpty && token != "null" && token != "") {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          print("Request: ${options.method} ${options.path}");
-          handler.next(options);
-        },
-        onResponse: (response, handler) {
-          print("Response:[${response.statusCode}] =>${response.data}");
-          handler.next(response);
-        },
         onError: (error, handler) {
-          print("Network Error: ${error.message}");
-          print("Error Type: ${error.type}");
-          print("Error Response: ${error.response?.data}");
-          
-          // Timeout hatası için özel mesaj
-          if (error.type == DioExceptionType.connectionTimeout ||
-              error.type == DioExceptionType.receiveTimeout ||
-              error.type == DioExceptionType.sendTimeout) {
-            print("Timeout Error: Sunucu yanıt vermiyor. Lütfen internet bağlantınızı kontrol edin.");
-          }
-          
+          print('Network Error: ${error.message}');
           handler.next(error);
         },
       ),
     );
   }
-  late Dio dio;
 
-  Future dioGet<T extends BaseModel>(String path, T model) async {
+  Future<T?> dioGet<T extends BaseModel>(String path, T model) async {
     try {
-      final response = await dio.get(path);
+      final response = await dio.get(path).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request timeout after 15 seconds');
+        },
+      );
 
       switch (response.statusCode) {
         case HttpStatus.ok:
           final responseBody = response.data;
-
           if (responseBody is List) {
-            return responseBody.map((e) => model.fromJson(Map<String, dynamic>.from(e))).toList();
+            return responseBody.map((item) => model.fromJson(Map<String, dynamic>.from(item))).cast<T>().toList() as T;
           } else if (responseBody is Map) {
             return model.fromJson(Map<String, dynamic>.from(responseBody));
           }
           return responseBody;
+
+        case HttpStatus.noContent:
+          return null;
 
         default:
           throw Exception("Get request failed : ${response.statusCode}");
@@ -93,18 +79,26 @@ class NetworkManager {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
-        throw Exception("Sunucu yanıt vermiyor. Lütfen internet bağlantınızı kontrol edin.");
+        throw TimeoutException("Sunucu yanıt vermiyor. Lütfen internet bağlantınızı kontrol edin.");
       }
       throw Exception("Ağ hatası: ${e.message}");
+    } on TimeoutException catch (e) {
+      print("TimeoutException in dioGet: $e");
+      throw TimeoutException("İstek zaman aşımına uğradı. Lütfen tekrar deneyin.");
     } catch (e) {
       print("Unexpected error in dioGet: $e");
       throw Exception("Beklenmeyen hata: $e");
     }
   }
 
-  Future dioPost<T extends BaseModel>(String path, T model, {Map<String, dynamic>? data}) async {
+  Future<T?> dioPost<T extends BaseModel>(String path, T model, {Map<String, dynamic>? data}) async {
     try {
-      final response = await dio.post(path, data: data);
+      final response = await dio.post(path, data: data).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request timeout after 15 seconds');
+        },
+      );
 
       switch (response.statusCode) {
         case HttpStatus.ok:
@@ -123,14 +117,26 @@ class NetworkManager {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
-        throw Exception("Sunucu yanıt vermiyor. Lütfen internet bağlantınızı kontrol edin.");
+        throw TimeoutException("Sunucu yanıt vermiyor. Lütfen internet bağlantınızı kontrol edin.");
       }
       throw Exception("Ağ hatası: ${e.message}");
+    } on TimeoutException catch (e) {
+      print("TimeoutException in dioPost: $e");
+      throw TimeoutException("İstek zaman aşımına uğradı. Lütfen tekrar deneyin.");
     } catch (e) {
       print("Unexpected error in dioPost: $e");
       throw Exception("Beklenmeyen hata: $e");
     }
   }
+}
+
+// Timeout Exception sınıfı
+class TimeoutException implements Exception {
+  final String message;
+  TimeoutException(this.message);
+  
+  @override
+  String toString() => message;
 }
 
 // Retry Interceptor sınıfı
@@ -143,11 +149,10 @@ class RetryInterceptor extends Interceptor {
   RetryInterceptor({
     required this.dio,
     required this.logPrint,
-    this.retries = 3,
+    this.retries = 2,
     this.retryDelays = const [
-      Duration(seconds: 1),
       Duration(seconds: 2),
-      Duration(seconds: 3),
+      Duration(seconds: 4),
     ],
   });
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +21,6 @@ import 'package:smart_city/core/components/loading/skeleton_loading.dart';
 import 'package:smart_city/core/components/animations/micro_animations.dart';
 import 'package:smart_city/core/components/lazy_loading/lazy_loading_widget.dart';
 import 'package:smart_city/core/components/performance/memory_manager.dart';
-import 'dart:html' as html;
 
 // --- ENHANCED ANIMATION WIDGETS ---
 class EnhancedFadeInWidget extends StatefulWidget {

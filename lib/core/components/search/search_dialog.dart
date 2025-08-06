@@ -17,7 +17,7 @@ class SearchDialog extends StatefulWidget {
 class _SearchDialogState extends State<SearchDialog> {
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
-  bool _isExpanded = false;
+  final bool _isExpanded = false;
 
   @override
   void initState() {
@@ -53,13 +53,7 @@ class _SearchDialogState extends State<SearchDialog> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
         ),
         child: Column(
           children: [
@@ -68,20 +62,12 @@ class _SearchDialogState extends State<SearchDialog> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade200),
-                ),
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
               ),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.of(context).pop()),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
@@ -109,9 +95,7 @@ class _SearchDialogState extends State<SearchDialog> {
               child: Observer(
                 builder: (_) {
                   if (widget.searchViewModel.isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (!widget.searchViewModel.isSearchActive) {
@@ -140,11 +124,7 @@ class _SearchDialogState extends State<SearchDialog> {
         children: [
           const Text(
             'Ne arıyorsunuz?',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -156,7 +136,12 @@ class _SearchDialogState extends State<SearchDialog> {
                 _buildSuggestionCard('Haberler', 'Güncel haberleri ara', Icons.article, const Color(0xFF10B981)),
                 _buildSuggestionCard('Duyurular', 'Önemli duyuruları ara', Icons.campaign, const Color(0xFF0A4A9D)),
                 _buildSuggestionCard('Projeler', 'Şehir projelerini ara', Icons.work_outline, const Color(0xFFF59E0B)),
-                _buildSuggestionCard('Şehir Hizmetleri', 'Akıllı şehir hizmetlerini ara', Icons.apps, const Color(0xFF8B5CF6)),
+                _buildSuggestionCard(
+                  'Şehir Hizmetleri',
+                  'Akıllı şehir hizmetlerini ara',
+                  Icons.apps,
+                  const Color(0xFF8B5CF6),
+                ),
               ],
             ),
           ),
@@ -181,28 +166,19 @@ class _SearchDialogState extends State<SearchDialog> {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
                 child: Icon(icon, color: color, size: 32),
               ),
               const SizedBox(height: 12),
               Text(
                 title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -219,26 +195,16 @@ class _SearchDialogState extends State<SearchDialog> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.search_off,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
             'Sonuç bulunamadı',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
           ),
           const SizedBox(height: 8),
           Text(
             '"${widget.searchViewModel.currentQuery}" için sonuç bulunamadı',
-            style: TextStyle(
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -282,11 +248,7 @@ class _SearchDialogState extends State<SearchDialog> {
           const SizedBox(width: 8),
           Text(
             title,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color),
           ),
         ],
       ),
@@ -310,15 +272,8 @@ class _SearchDialogState extends State<SearchDialog> {
                     return Container(
                       width: 40,
                       height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Icon(
-                        _getIconForType(result.type ?? ''),
-                        color: Colors.grey.shade600,
-                        size: 20,
-                      ),
+                      decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(6)),
+                      child: Icon(_getIconForType(result.type ?? ''), color: Colors.grey.shade600, size: 20),
                     );
                   },
                 ),
@@ -326,15 +281,8 @@ class _SearchDialogState extends State<SearchDialog> {
             : Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  _getIconForType(result.type ?? ''),
-                  color: Colors.grey.shade600,
-                  size: 20,
-                ),
+                decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(6)),
+                child: Icon(_getIconForType(result.type ?? ''), color: Colors.grey.shade600, size: 20),
               ),
         title: Text(
           result.title ?? '',
@@ -400,4 +348,4 @@ class _SearchDialogState extends State<SearchDialog> {
         break;
     }
   }
-} 
+}

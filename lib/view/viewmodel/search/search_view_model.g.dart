@@ -48,6 +48,14 @@ mixin _$SearchViewModel on _SearchViewModelBase, Store {
         () => super.cityServiceResults,
         name: '_SearchViewModelBase.cityServiceResults',
       )).value;
+  Computed<List<SearchModel>>? _$eventResultsComputed;
+
+  @override
+  List<SearchModel> get eventResults =>
+      (_$eventResultsComputed ??= Computed<List<SearchModel>>(
+        () => super.eventResults,
+        name: '_SearchViewModelBase.eventResults',
+      )).value;
 
   late final _$isLoadingAtom = Atom(
     name: '_SearchViewModelBase.isLoading',
@@ -171,7 +179,8 @@ hasResults: ${hasResults},
 newsResults: ${newsResults},
 announcementResults: ${announcementResults},
 projectResults: ${projectResults},
-cityServiceResults: ${cityServiceResults}
+cityServiceResults: ${cityServiceResults},
+eventResults: ${eventResults}
     ''';
   }
 }
