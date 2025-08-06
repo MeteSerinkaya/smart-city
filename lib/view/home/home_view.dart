@@ -1367,7 +1367,7 @@ class _PartnersSectionWidget extends StatelessWidget {
           viewportFraction = 0.5;
         }
         return Container(
-          color: const Color(0xFF2C2C2C),
+          color: const Color(0xFF2C2C2C), // Changed to #2c2c2c
           padding: EdgeInsets.symmetric(
             horizontal: constraints.maxWidth < 600 ? 12 : 64,
             vertical: constraints.maxWidth < 600 ? 32 : 80,
@@ -1380,7 +1380,7 @@ class _PartnersSectionWidget extends StatelessWidget {
                   fontFamily: 'Roboto',
                   fontSize: constraints.maxWidth < 600 ? 22 : 36,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.onSurfaceColor,
+                  color: Colors.white, // Changed to white for better contrast
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1391,7 +1391,7 @@ class _PartnersSectionWidget extends StatelessWidget {
                   fontFamily: 'Roboto',
                   fontSize: constraints.maxWidth < 600 ? 14 : 18,
                   fontWeight: FontWeight.w400,
-                  color: AppColors.onSurfaceColor.withOpacity(0.6),
+                  color: Colors.white.withOpacity(0.7), // Changed for better contrast
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -1695,7 +1695,11 @@ class _NavigationSectionWidget extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2C2C2C),
+                      gradient: LinearGradient(
+                        colors: [color.withOpacity(0.15), color.withOpacity(0.05), color.withOpacity(0.1)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: const BorderRadius.all(Radius.circular(20)),
                       border: Border.all(color: color.withOpacity(0.3), width: 1.5),
                     ),

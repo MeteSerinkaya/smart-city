@@ -42,7 +42,7 @@ class _NewsViewState extends State<NewsView> {
           return _buildEmptyState();
         }
         
-        return _buildNewsList(viewModel.newsList!);
+        return _buildNewsSection(viewModel.newsList!);
       },
     );
   }
@@ -300,5 +300,48 @@ class _NewsViewState extends State<NewsView> {
     } else {
       return 'Az önce';
     }
+  }
+
+  Widget _buildNewsSection(List<NewsModel> news) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+    final isTablet = screenWidth < 1024;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 1200),
+      child: Container(
+        color: const Color(0xFF2C2C2C), // Changed to #2c2c2c
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 64, vertical: isMobile ? 32 : 80),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Ana Başlık
+            Text(
+              'HABERLER',
+              style: TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: isMobile ? 28 : 36,
+                fontWeight: FontWeight.w700,
+                color: Colors.white, // Changed to white for better contrast
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Haber Listesi
+            _buildNewsList(news),
+
+            const SizedBox(height: 48),
+
+            // TÜMÜNÜ GÖRÜNTÜLE Bölümü
+            _buildSeeAllSection(isMobile),
+
+            const SizedBox(height: 32),
+
+            // Footer Text
+            _buildFooterText(),
+          ],
+        ),
+      ),
+    );
   }
 }

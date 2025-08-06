@@ -148,6 +148,7 @@ class _ProjectViewState extends State<ProjectView> {
               maxWidth: constraints.maxWidth > 1200 ? 1200 : constraints.maxWidth,
             ),
             child: Container(
+              color: const Color(0xFF2C2C2C), // Changed to #2c2c2c
               padding: const EdgeInsets.all(32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,13 +173,13 @@ class _ProjectViewState extends State<ProjectView> {
                               'Projeler',
                               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF111827),
+                                color: Colors.white, // Changed to white for better contrast
                               ),
                             ),
                             Text(
                               'Şehrimizin gelişim projeleri',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: const Color(0xFF6B7280),
+                                color: Colors.white.withOpacity(0.7), // Changed for better contrast
                               ),
                             ),
                           ],

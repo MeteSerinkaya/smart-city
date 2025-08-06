@@ -143,7 +143,7 @@ class _AnnouncementViewState extends State<AnnouncementView> {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 1200),
       child: Container(
-        color: Colors.white,
+        color: const Color(0xFF2C2C2C), // Changed to #2c2c2c
         padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 64, vertical: isMobile ? 32 : 80),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +155,7 @@ class _AnnouncementViewState extends State<AnnouncementView> {
                 fontFamily: 'Roboto',
                 fontSize: isMobile ? 28 : 36,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF1F2937),
+                color: Colors.white, // Changed to white for better contrast
               ),
             ),
             const SizedBox(height: 32),
