@@ -31,16 +31,18 @@ abstract class _CityServiceViewModelBase with Store {
     
     try {
       final result = await _cityServiceRepository.getCityServices();
-      if (result != null) {
+      if (result != null && result.isNotEmpty) {
         cityServiceList = result;
       } else {
+        // API yanıt vermezse veya boş data gelirse hemen boş state'e geç
         cityServiceList = [];
-        hasError = true;
-        errorMessage = "Şehir hizmetleri yüklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme, boş state göster
+        errorMessage = null;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      // Hata durumunda da boş state'e geç, error state gösterme
+      hasError = false;
+      errorMessage = null;
       cityServiceList = [];
     } finally {
       isLoading = false;
@@ -64,13 +66,11 @@ abstract class _CityServiceViewModelBase with Store {
         await fetchCityService();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Şehir hizmeti eklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -89,13 +89,11 @@ abstract class _CityServiceViewModelBase with Store {
         await fetchCityService();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Şehir hizmeti güncellenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -114,13 +112,11 @@ abstract class _CityServiceViewModelBase with Store {
         await fetchCityService();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Şehir hizmeti silinemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;

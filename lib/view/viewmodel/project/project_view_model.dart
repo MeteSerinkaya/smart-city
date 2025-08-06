@@ -31,16 +31,18 @@ abstract class _ProjectViewModelBase with Store {
     
     try {
       final result = await _projectRepository.getProjects();
-      if (result != null) {
+      if (result != null && result.isNotEmpty) {
         projectList = result;
       } else {
+        // API yanıt vermezse veya boş data gelirse hemen boş state'e geç
         projectList = [];
-        hasError = true;
-        errorMessage = "Projeler yüklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme, boş state göster
+        errorMessage = null;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      // Hata durumunda da boş state'e geç, error state gösterme
+      hasError = false;
+      errorMessage = null;
       projectList = [];
     } finally {
       isLoading = false;
@@ -64,13 +66,11 @@ abstract class _ProjectViewModelBase with Store {
         await fetchProjects();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Proje eklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -89,13 +89,11 @@ abstract class _ProjectViewModelBase with Store {
         await fetchProjects();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Proje güncellenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -114,13 +112,11 @@ abstract class _ProjectViewModelBase with Store {
         await fetchProjects();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Proje silinemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;

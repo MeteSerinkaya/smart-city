@@ -32,16 +32,18 @@ abstract class _AnnouncementViewModelBase with Store {
     try {
       final announcements = await _announcementRepository.getAnnouncement();
       print("DEBUG announcements: $announcements");
-      if (announcements != null) {
+      if (announcements != null && announcements.isNotEmpty) {
         announcementList = announcements;
       } else {
+        // API yanıt vermezse veya boş data gelirse hemen boş state'e geç
         announcementList = [];
-        hasError = true;
-        errorMessage = "Duyurular yüklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme, boş state göster
+        errorMessage = null;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      // Hata durumunda da boş state'e geç, error state gösterme
+      hasError = false;
+      errorMessage = null;
       announcementList = [];
     } finally {
       isLoading = false;
@@ -65,13 +67,11 @@ abstract class _AnnouncementViewModelBase with Store {
         await fetchAnnouncement();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Duyuru eklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -90,13 +90,11 @@ abstract class _AnnouncementViewModelBase with Store {
         await fetchAnnouncement();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Duyuru güncellenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -115,13 +113,11 @@ abstract class _AnnouncementViewModelBase with Store {
         await fetchAnnouncement();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Duyuru silinemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;

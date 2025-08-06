@@ -32,17 +32,19 @@ abstract class _EventViewModelBase with Store {
     try {
       final events = await _eventRepository.getEvents();
       print('DEBUG fetchEvents response: $events');
-      if (events != null) {
+      if (events != null && events.isNotEmpty) {
         eventList = events;
       } else {
+        // API yanıt vermezse veya boş data gelirse hemen boş state'e geç
         eventList = [];
-        hasError = true;
-        errorMessage = "Etkinlikler yüklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme, boş state göster
+        errorMessage = null;
       }
       print('DEBUG eventList after set: $eventList');
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      // Hata durumunda da boş state'e geç, error state gösterme
+      hasError = false;
+      errorMessage = null;
       eventList = [];
     } finally {
       isLoading = false;
@@ -66,13 +68,11 @@ abstract class _EventViewModelBase with Store {
         await fetchEvents();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Etkinlik eklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -91,13 +91,11 @@ abstract class _EventViewModelBase with Store {
         await fetchEvents();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Etkinlik güncellenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -116,13 +114,11 @@ abstract class _EventViewModelBase with Store {
         await fetchEvents();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Etkinlik silinemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;

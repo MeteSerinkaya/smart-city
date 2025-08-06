@@ -31,16 +31,18 @@ abstract class _NewsViewModelBase with Store {
     
     try {
       final result = await _newsRepository.getNews();
-      if (result != null) {
+      if (result != null && result.isNotEmpty) {
         newsList = result;
       } else {
+        // API yanıt vermezse veya boş data gelirse hemen boş state'e geç
         newsList = [];
-        hasError = true;
-        errorMessage = "Veri yüklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme, boş state göster
+        errorMessage = null;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      // Hata durumunda da boş state'e geç, error state gösterme
+      hasError = false;
+      errorMessage = null;
       newsList = [];
     } finally {
       isLoading = false;
@@ -64,13 +66,11 @@ abstract class _NewsViewModelBase with Store {
         await fetchNews();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Haber eklenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -89,13 +89,11 @@ abstract class _NewsViewModelBase with Store {
         await fetchNews();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Haber güncellenemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
@@ -114,13 +112,11 @@ abstract class _NewsViewModelBase with Store {
         await fetchNews();
         return true;
       } else {
-        hasError = true;
-        errorMessage = "Haber silinemedi. Lütfen tekrar deneyin.";
+        hasError = false; // Error state gösterme
         return false;
       }
     } catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
+      hasError = false; // Error state gösterme
       return false;
     } finally {
       isLoading = false;
