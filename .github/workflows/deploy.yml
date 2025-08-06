@@ -5,23 +5,42 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - uses: subosito/flutter-action@v2
+    - name: Checkout
+      uses: actions/checkout@v3
       with:
-        flutter-version: '3.32.5'
-        channel: 'stable'
+        fetch-depth: 0
+    
+    - name: Setup Git
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+    
+    - name: Install Flutter
+      run: |
+        git clone https://github.com/flutter/flutter.git -b stable
+        export PATH="$PATH:`pwd`/flutter/bin"
+        flutter doctor
+        flutter --version
     
     - name: Get Flutter dependencies
-      run: flutter pub get
+      run: |
+        export PATH="$PATH:`pwd`/flutter/bin"
+        flutter pub get
       
     - name: Build Flutter web app
-      run: flutter build web --release
+      run: |
+        export PATH="$PATH:`pwd`/flutter/bin"
+        flutter build web --release
       
     - name: List build directory
       run: ls -la build/web/
