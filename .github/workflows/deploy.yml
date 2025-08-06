@@ -18,44 +18,44 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Setup Git
-      run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-    
-    - name: Install Flutter
-      run: |
-        git clone https://github.com/flutter/flutter.git -b stable
-        export PATH="$PATH:`pwd`/flutter/bin"
-        flutter doctor
-        flutter --version
-    
-    - name: Get Flutter dependencies
-      run: |
-        export PATH="$PATH:`pwd`/flutter/bin"
-        flutter pub get
-      
-    - name: Build Flutter web app
-      run: |
-        export PATH="$PATH:`pwd`/flutter/bin"
-        flutter build web --release
-      
-    - name: List build directory
-      run: ls -la build/web/
-      
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-      
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: './build/web'
-        
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Install Flutter
+        run: |
+          git clone https://github.com/flutter/flutter.git -b stable
+          export PATH="$PATH:`pwd`/flutter/bin"
+          flutter doctor
+          flutter --version
+
+      - name: Get Flutter dependencies
+        run: |
+          export PATH="$PATH:`pwd`/flutter/bin"
+          flutter pub get
+
+      - name: Build Flutter web app
+        run: |
+          export PATH="$PATH:`pwd`/flutter/bin"
+          flutter build web --release
+
+      - name: List build directory
+        run: ls -la build/web/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './build/web'
+
   deploy:
     environment:
       name: github-pages
@@ -65,4 +65,6 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages
