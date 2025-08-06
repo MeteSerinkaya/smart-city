@@ -1367,7 +1367,7 @@ class _PartnersSectionWidget extends StatelessWidget {
           viewportFraction = 0.5;
         }
         return Container(
-          color: const Color(0xFFF5F5F5),
+          color: const Color(0xFF2C2C2C),
           padding: EdgeInsets.symmetric(
             horizontal: constraints.maxWidth < 600 ? 12 : 64,
             vertical: constraints.maxWidth < 600 ? 32 : 80,
@@ -1695,11 +1695,7 @@ class _NavigationSectionWidget extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [color.withOpacity(0.15), color.withOpacity(0.05), color.withOpacity(0.1)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: const Color(0xFF2C2C2C),
                       borderRadius: const BorderRadius.all(Radius.circular(20)),
                       border: Border.all(color: color.withOpacity(0.3), width: 1.5),
                     ),
