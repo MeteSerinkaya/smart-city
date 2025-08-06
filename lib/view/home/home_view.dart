@@ -1349,13 +1349,17 @@ class _PartnersSectionWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<PartnerItem> partners = [
       PartnerItem(
-        name: 'Erzurum Büyükşehir Belediyesi',
-        logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTfPqrKpWhKvdu6YlI1lT55kl-lKrm7OEoWAA&s',
+        name: 'Erzurum Ticaret ve Sanayi Odası',
+        logoUrl: 'asset/paydas/ticaret.jpeg',
       ),
-      PartnerItem(name: 'Erzurum Teknoloji Vakfı', logoUrl: 'asset/paydas/ttv.png'),
-      PartnerItem(name: 'Erzurum Ticaret ve Sanayi Odası', logoUrl: 'asset/paydas/ticaret.jpeg'),
-      PartnerItem(name: 'Atatürk Üniversitesi', logoUrl: 'asset/paydas/Ataturkuni_logo.png'),
-      PartnerItem(name: 'Erzurum Teknik Üniversitesi', logoUrl: 'asset/paydas/etu.png'),
+      PartnerItem(
+        name: 'Atatürk Üniversitesi',
+        logoUrl: 'asset/paydas/Ataturkuni_logo.png',
+      ),
+      PartnerItem(
+        name: 'Erzurum Teknik Üniversitesi',
+        logoUrl: 'asset/paydas/etu.png',
+      ),
     ];
 
     return LayoutBuilder(
@@ -1478,25 +1482,6 @@ class _PartnersSectionWidget extends StatelessWidget {
                 height: 140,
                 fit: BoxFit.contain,
                 alignment: Alignment.center,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    width: 240,
-                    height: 140,
-                    decoration: const BoxDecoration(
-                      color: Color(0x33CCCCCC),
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                    ),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                            : null,
-                        color: AppColors.primaryColor,
-                      ),
-                    ),
-                  );
-                },
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     width: 240,
@@ -1530,6 +1515,123 @@ class _PartnersSectionWidget extends StatelessWidget {
                 },
               ),
       ),
+    );
+  }
+}
+
+class _AnnouncementsSectionWidget extends StatelessWidget {
+  const _AnnouncementsSectionWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          color: const Color(0xFF2C2C2C), // Full width dark background
+          padding: EdgeInsets.symmetric(
+            horizontal: constraints.maxWidth < 600 ? 12 : 64,
+            vertical: constraints.maxWidth < 600 ? 32 : 80,
+          ),
+          child: Column(
+            children: [
+              Text(
+                'DUYURULAR',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: constraints.maxWidth < 600 ? 22 : 36,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white, // Changed to white for better contrast
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              // Duyuru içeriği buraya gelecek
+              Container(
+                padding: const EdgeInsets.all(24),
+                child: const AnnouncementView(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _NewsSectionWidget extends StatelessWidget {
+  const _NewsSectionWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          color: const Color(0xFF2C2C2C), // Full width dark background
+          padding: EdgeInsets.symmetric(
+            horizontal: constraints.maxWidth < 600 ? 12 : 64,
+            vertical: constraints.maxWidth < 600 ? 32 : 80,
+          ),
+          child: Column(
+            children: [
+              Text(
+                'HABERLER',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: constraints.maxWidth < 600 ? 22 : 36,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white, // Changed to white for better contrast
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              // Haber içeriği buraya gelecek
+              Container(
+                padding: const EdgeInsets.all(24),
+                child: const NewsView(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ProjectsSectionWidget extends StatelessWidget {
+  const _ProjectsSectionWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          color: const Color(0xFF2C2C2C), // Full width dark background
+          padding: EdgeInsets.symmetric(
+            horizontal: constraints.maxWidth < 600 ? 12 : 64,
+            vertical: constraints.maxWidth < 600 ? 32 : 80,
+          ),
+          child: Column(
+            children: [
+              Text(
+                'PROJELER',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: constraints.maxWidth < 600 ? 22 : 36,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white, // Changed to white for better contrast
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              // Proje içeriği buraya gelecek
+              Container(
+                padding: const EdgeInsets.all(24),
+                child: const ProjectView(),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -1818,7 +1920,7 @@ class _ContentSectionsWidgetState extends State<_ContentSectionsWidget> {
                 icon: 'asset/icons/megaphone.png',
                 title: 'Duyurular',
                 color: AppColors.onSurfaceColor,
-                child: AnnouncementView(),
+                child: const _AnnouncementsSectionWidget(),
               ),
               const SizedBox(height: 80),
               _buildContentSection(
@@ -1834,7 +1936,7 @@ class _ContentSectionsWidgetState extends State<_ContentSectionsWidget> {
                 icon: 'asset/icons/newspaper-folded.png',
                 title: 'Haberler',
                 color: const Color(0xFF10B981),
-                child: NewsView(),
+                child: const _NewsSectionWidget(),
               ),
               const SizedBox(height: 80),
               _buildContentSection(
@@ -1850,7 +1952,7 @@ class _ContentSectionsWidgetState extends State<_ContentSectionsWidget> {
                 icon: 'asset/icons/project-management.png',
                 title: 'Projeler',
                 color: const Color(0xFFF59E0B),
-                child: const ProjectView(),
+                child: const _ProjectsSectionWidget(),
               ),
             ],
           ),
