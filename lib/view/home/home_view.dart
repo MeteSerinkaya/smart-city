@@ -1829,7 +1829,7 @@ class _ContentSectionsWidgetState extends State<_ContentSectionsWidget> {
                 child: EventView(),
               ),
               const SizedBox(height: 80),
-              _buildContentSection(
+              _buildDarkContentSection(
                 key: widget.newsKey,
                 icon: 'asset/icons/newspaper-folded.png',
                 title: 'Haberler',
@@ -1845,7 +1845,7 @@ class _ContentSectionsWidgetState extends State<_ContentSectionsWidget> {
                 child: const CityServicesView(),
               ),
               const SizedBox(height: 80),
-              _buildContentSection(
+              _buildDarkContentSection(
                 key: widget.projectKey,
                 icon: 'asset/icons/project-management.png',
                 title: 'Projeler',
@@ -1952,6 +1952,92 @@ class _ContentSectionsWidgetState extends State<_ContentSectionsWidget> {
               ),
               child: Padding(padding: const EdgeInsets.all(24), child: child),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDarkContentSection({
+    required GlobalKey key,
+    required String icon,
+    required String title,
+    required Color color,
+    required Widget child,
+  }) {
+    return Container(
+      key: key,
+      color: const Color(0xFF2C2C2C), // Full width dark background
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Enhanced Header with Dark Background
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2C),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withOpacity(0.3), width: 1),
+            ),
+            child: Row(
+              children: [
+                // Enhanced Icon Container
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [color.withOpacity(0.2), color.withOpacity(0.1)]),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+                    boxShadow: [BoxShadow(color: color.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))],
+                  ),
+                  child: Stack(
+                    children: [
+                      Image.asset(icon, width: 28, height: 28, color: color),
+                      // Pulsing indicator
+                      Positioned(top: 0, right: 0, child: PulsingDotWidget(color: color, size: 6.0)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 20),
+                // Enhanced Title with White Color
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Roboto',
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+                // Enhanced Action Button
+                EnhancedHoverWidget(
+                  scale: 1.05,
+                  glowColor: color,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _openDetailPage(context, _getDetailRoute(title)),
+                    icon: const Icon(Icons.open_in_new, size: 16),
+                    label: const Text('Detayları Gör'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shadowColor: color.withOpacity(0.3),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          // Content Container with Dark Background
+          Container(
+            color: const Color(0xFF2C2C2C),
+            child: Padding(padding: const EdgeInsets.all(24), child: child),
           ),
         ],
       ),
