@@ -45,6 +45,42 @@ mixin _$AnnouncementViewModel on _AnnouncementViewModelBase, Store {
     });
   }
 
+  late final _$errorMessageAtom = Atom(
+    name: '_AnnouncementViewModelBase.errorMessage',
+    context: context,
+  );
+
+  @override
+  String? get errorMessage {
+    _$errorMessageAtom.reportRead();
+    return super.errorMessage;
+  }
+
+  @override
+  set errorMessage(String? value) {
+    _$errorMessageAtom.reportWrite(value, super.errorMessage, () {
+      super.errorMessage = value;
+    });
+  }
+
+  late final _$hasErrorAtom = Atom(
+    name: '_AnnouncementViewModelBase.hasError',
+    context: context,
+  );
+
+  @override
+  bool get hasError {
+    _$hasErrorAtom.reportRead();
+    return super.hasError;
+  }
+
+  @override
+  set hasError(bool value) {
+    _$hasErrorAtom.reportWrite(value, super.hasError, () {
+      super.hasError = value;
+    });
+  }
+
   late final _$fetchAnnouncementAsyncAction = AsyncAction(
     '_AnnouncementViewModelBase.fetchAnnouncement',
     context: context,
@@ -53,6 +89,18 @@ mixin _$AnnouncementViewModel on _AnnouncementViewModelBase, Store {
   @override
   Future<void> fetchAnnouncement() {
     return _$fetchAnnouncementAsyncAction.run(() => super.fetchAnnouncement());
+  }
+
+  late final _$retryFetchAnnouncementAsyncAction = AsyncAction(
+    '_AnnouncementViewModelBase.retryFetchAnnouncement',
+    context: context,
+  );
+
+  @override
+  Future<void> retryFetchAnnouncement() {
+    return _$retryFetchAnnouncementAsyncAction.run(
+      () => super.retryFetchAnnouncement(),
+    );
   }
 
   late final _$addAnnouncementAsyncAction = AsyncAction(
@@ -93,7 +141,9 @@ mixin _$AnnouncementViewModel on _AnnouncementViewModelBase, Store {
   String toString() {
     return '''
 isLoading: ${isLoading},
-announcementList: ${announcementList}
+announcementList: ${announcementList},
+errorMessage: ${errorMessage},
+hasError: ${hasError}
     ''';
   }
 }

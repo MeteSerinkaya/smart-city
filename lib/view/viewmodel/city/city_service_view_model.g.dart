@@ -45,6 +45,42 @@ mixin _$CityServiceViewModel on _CityServiceViewModelBase, Store {
     });
   }
 
+  late final _$errorMessageAtom = Atom(
+    name: '_CityServiceViewModelBase.errorMessage',
+    context: context,
+  );
+
+  @override
+  String? get errorMessage {
+    _$errorMessageAtom.reportRead();
+    return super.errorMessage;
+  }
+
+  @override
+  set errorMessage(String? value) {
+    _$errorMessageAtom.reportWrite(value, super.errorMessage, () {
+      super.errorMessage = value;
+    });
+  }
+
+  late final _$hasErrorAtom = Atom(
+    name: '_CityServiceViewModelBase.hasError',
+    context: context,
+  );
+
+  @override
+  bool get hasError {
+    _$hasErrorAtom.reportRead();
+    return super.hasError;
+  }
+
+  @override
+  set hasError(bool value) {
+    _$hasErrorAtom.reportWrite(value, super.hasError, () {
+      super.hasError = value;
+    });
+  }
+
   late final _$fetchCityServiceAsyncAction = AsyncAction(
     '_CityServiceViewModelBase.fetchCityService',
     context: context,
@@ -53,6 +89,18 @@ mixin _$CityServiceViewModel on _CityServiceViewModelBase, Store {
   @override
   Future<void> fetchCityService() {
     return _$fetchCityServiceAsyncAction.run(() => super.fetchCityService());
+  }
+
+  late final _$retryFetchCityServiceAsyncAction = AsyncAction(
+    '_CityServiceViewModelBase.retryFetchCityService',
+    context: context,
+  );
+
+  @override
+  Future<void> retryFetchCityService() {
+    return _$retryFetchCityServiceAsyncAction.run(
+      () => super.retryFetchCityService(),
+    );
   }
 
   late final _$addCityServiceAsyncAction = AsyncAction(
@@ -93,7 +141,9 @@ mixin _$CityServiceViewModel on _CityServiceViewModelBase, Store {
   String toString() {
     return '''
 isLoading: ${isLoading},
-cityServiceList: ${cityServiceList}
+cityServiceList: ${cityServiceList},
+errorMessage: ${errorMessage},
+hasError: ${hasError}
     ''';
   }
 }

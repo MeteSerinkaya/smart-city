@@ -176,17 +176,9 @@ class CityServicesView extends StatelessWidget {
         padding: EdgeInsets.all(32),
         child: Column(
           children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
-            ),
+            CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6))),
             SizedBox(height: 16),
-            Text(
-              'Şehir hizmetleri yükleniyor...',
-              style: TextStyle(
-                color: Color(0xFF6B7280),
-                fontSize: 16,
-              ),
-            ),
+            Text('Şehir hizmetleri yükleniyor...', style: TextStyle(color: Color(0xFF6B7280), fontSize: 16)),
           ],
         ),
       ),
@@ -205,28 +197,17 @@ class CityServicesView extends StatelessWidget {
                 color: const Color(0xFFEF4444).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Icons.error_outline,
-                size: 48,
-                color: Color(0xFFEF4444),
-              ),
+              child: const Icon(Icons.error_outline, size: 48, color: Color(0xFFEF4444)),
             ),
             const SizedBox(height: 16),
             const Text(
               'Bir hata oluştu',
-              style: TextStyle(
-                color: Color(0xFF374151),
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: Color(0xFF374151), fontSize: 18, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               viewModel.errorMessage ?? 'Şehir hizmetleri yüklenirken bir sorun oluştu',
-              style: const TextStyle(
-                color: Color(0xFF6B7280),
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -234,10 +215,7 @@ class CityServicesView extends StatelessWidget {
               onPressed: () => viewModel.retryFetchCityService(),
               icon: const Icon(Icons.refresh),
               label: const Text('Tekrar Dene'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8B5CF6),
-                foregroundColor: Colors.white,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6), foregroundColor: Colors.white),
             ),
           ],
         ),
@@ -253,32 +231,18 @@ class CityServicesView extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Color(0xFF8B5CF6),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.apps,
-                size: 48,
-                color: Colors.white,
-              ),
+              decoration: const BoxDecoration(color: Color(0xFF8B5CF6), shape: BoxShape.circle),
+              child: const Icon(Icons.apps, size: 48, color: Colors.white),
             ),
             const SizedBox(height: 16),
             const Text(
               'Henüz şehir hizmeti eklenmemiş',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF374151),
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF374151)),
             ),
             const SizedBox(height: 8),
             const Text(
               'Yeni hizmetler eklendiğinde burada görünecek',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
+              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
               textAlign: TextAlign.center,
             ),
           ],

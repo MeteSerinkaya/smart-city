@@ -45,6 +45,42 @@ mixin _$EventViewModel on _EventViewModelBase, Store {
     });
   }
 
+  late final _$errorMessageAtom = Atom(
+    name: '_EventViewModelBase.errorMessage',
+    context: context,
+  );
+
+  @override
+  String? get errorMessage {
+    _$errorMessageAtom.reportRead();
+    return super.errorMessage;
+  }
+
+  @override
+  set errorMessage(String? value) {
+    _$errorMessageAtom.reportWrite(value, super.errorMessage, () {
+      super.errorMessage = value;
+    });
+  }
+
+  late final _$hasErrorAtom = Atom(
+    name: '_EventViewModelBase.hasError',
+    context: context,
+  );
+
+  @override
+  bool get hasError {
+    _$hasErrorAtom.reportRead();
+    return super.hasError;
+  }
+
+  @override
+  set hasError(bool value) {
+    _$hasErrorAtom.reportWrite(value, super.hasError, () {
+      super.hasError = value;
+    });
+  }
+
   late final _$fetchEventsAsyncAction = AsyncAction(
     '_EventViewModelBase.fetchEvents',
     context: context,
@@ -53,6 +89,16 @@ mixin _$EventViewModel on _EventViewModelBase, Store {
   @override
   Future<void> fetchEvents() {
     return _$fetchEventsAsyncAction.run(() => super.fetchEvents());
+  }
+
+  late final _$retryFetchEventsAsyncAction = AsyncAction(
+    '_EventViewModelBase.retryFetchEvents',
+    context: context,
+  );
+
+  @override
+  Future<void> retryFetchEvents() {
+    return _$retryFetchEventsAsyncAction.run(() => super.retryFetchEvents());
   }
 
   late final _$addEventAsyncAction = AsyncAction(
@@ -89,7 +135,9 @@ mixin _$EventViewModel on _EventViewModelBase, Store {
   String toString() {
     return '''
 isLoading: ${isLoading},
-eventList: ${eventList}
+eventList: ${eventList},
+errorMessage: ${errorMessage},
+hasError: ${hasError}
     ''';
   }
 }

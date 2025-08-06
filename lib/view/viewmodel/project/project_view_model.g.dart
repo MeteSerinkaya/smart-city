@@ -45,6 +45,42 @@ mixin _$ProjectViewModel on _ProjectViewModelBase, Store {
     });
   }
 
+  late final _$errorMessageAtom = Atom(
+    name: '_ProjectViewModelBase.errorMessage',
+    context: context,
+  );
+
+  @override
+  String? get errorMessage {
+    _$errorMessageAtom.reportRead();
+    return super.errorMessage;
+  }
+
+  @override
+  set errorMessage(String? value) {
+    _$errorMessageAtom.reportWrite(value, super.errorMessage, () {
+      super.errorMessage = value;
+    });
+  }
+
+  late final _$hasErrorAtom = Atom(
+    name: '_ProjectViewModelBase.hasError',
+    context: context,
+  );
+
+  @override
+  bool get hasError {
+    _$hasErrorAtom.reportRead();
+    return super.hasError;
+  }
+
+  @override
+  set hasError(bool value) {
+    _$hasErrorAtom.reportWrite(value, super.hasError, () {
+      super.hasError = value;
+    });
+  }
+
   late final _$fetchProjectsAsyncAction = AsyncAction(
     '_ProjectViewModelBase.fetchProjects',
     context: context,
@@ -53,6 +89,18 @@ mixin _$ProjectViewModel on _ProjectViewModelBase, Store {
   @override
   Future<void> fetchProjects() {
     return _$fetchProjectsAsyncAction.run(() => super.fetchProjects());
+  }
+
+  late final _$retryFetchProjectsAsyncAction = AsyncAction(
+    '_ProjectViewModelBase.retryFetchProjects',
+    context: context,
+  );
+
+  @override
+  Future<void> retryFetchProjects() {
+    return _$retryFetchProjectsAsyncAction.run(
+      () => super.retryFetchProjects(),
+    );
   }
 
   late final _$addProjectAsyncAction = AsyncAction(
@@ -89,7 +137,9 @@ mixin _$ProjectViewModel on _ProjectViewModelBase, Store {
   String toString() {
     return '''
 isLoading: ${isLoading},
-projectList: ${projectList}
+projectList: ${projectList},
+errorMessage: ${errorMessage},
+hasError: ${hasError}
     ''';
   }
 }
