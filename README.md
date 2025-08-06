@@ -1,6 +1,8 @@
-# smart_city
+# Smart City App
 
-A new Flutter project.
+A Flutter application for smart city services.
+
+<!-- Last updated: 2024 -->
 
 ## Getting Started
 
