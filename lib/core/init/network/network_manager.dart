@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:smart_city/core/base/base_model.dart';
+import 'package:smart_city/core/base/model/base_model.dart';
 import 'dart:io';
 
 class NetworkManager {
