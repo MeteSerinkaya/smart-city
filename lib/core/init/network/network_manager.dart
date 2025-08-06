@@ -15,23 +15,22 @@ class NetworkManager {
   NetworkManager._init() {
     final baseOptions = BaseOptions(
       baseUrl: "https://localhost:7276/api/",
-      connectTimeout: const Duration(seconds: 10), // Reduced from 30 to 10
-      receiveTimeout: const Duration(seconds: 10), // Reduced from 30 to 10
-      sendTimeout: const Duration(seconds: 10), // Reduced from 30 to 10
+      connectTimeout: const Duration(seconds: 3), // Reduced from 10 to 3 seconds
+      receiveTimeout: const Duration(seconds: 3), // Reduced from 10 to 3 seconds
+      sendTimeout: const Duration(seconds: 3), // Reduced from 10 to 3 seconds
       headers: {"val": LocaleManager.instance.getStringValue(PreferencesKeys.TOKEN) ?? ""},
     );
 
     dio = Dio(baseOptions);
 
-    // Enhanced Retry interceptor
+    // Enhanced Retry interceptor with shorter delays
     dio.interceptors.add(
       RetryInterceptor(
         dio: dio,
         logPrint: print,
-        retries: 2, // Reduced from 3 to 2
+        retries: 1, // Reduced from 2 to 1 retry
         retryDelays: const [
-          Duration(seconds: 1),
-          Duration(seconds: 2),
+          Duration(milliseconds: 500), // Reduced from 1 second to 500ms
         ],
       ),
     );
@@ -54,14 +53,14 @@ class NetworkManager {
           print("Network Error: ${error.message}");
           print("Error Type: ${error.type}");
           print("Error Response: ${error.response?.data}");
-          
+
           // Enhanced timeout error handling
           if (error.type == DioExceptionType.connectionTimeout ||
               error.type == DioExceptionType.receiveTimeout ||
               error.type == DioExceptionType.sendTimeout) {
             print("Timeout Error: Sunucu yanıt vermiyor. Lütfen internet bağlantınızı kontrol edin.");
           }
-          
+
           handler.next(error);
         },
       ),
@@ -142,11 +141,8 @@ class RetryInterceptor extends Interceptor {
   RetryInterceptor({
     required this.dio,
     required this.logPrint,
-    this.retries = 2,
-    this.retryDelays = const [
-      Duration(seconds: 1),
-      Duration(seconds: 2),
-    ],
+    this.retries = 1,
+    this.retryDelays = const [Duration(milliseconds: 500)],
   });
 
   @override
@@ -156,11 +152,11 @@ class RetryInterceptor extends Interceptor {
 
     if (_shouldRetry(err) && retryCount < retries) {
       logPrint('Retrying request (${retryCount + 1}/$retries)');
-      
+
       await Future.delayed(retryDelays[retryCount]);
-      
+
       extra['retryCount'] = retryCount + 1;
-      
+
       try {
         final response = await dio.fetch(err.requestOptions);
         handler.resolve(response);
@@ -170,14 +166,14 @@ class RetryInterceptor extends Interceptor {
         return;
       }
     }
-    
+
     handler.next(err);
   }
 
   bool _shouldRetry(DioException err) {
     return err.type == DioExceptionType.connectionTimeout ||
-           err.type == DioExceptionType.receiveTimeout ||
-           err.type == DioExceptionType.sendTimeout ||
-           err.type == DioExceptionType.connectionError;
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.connectionError;
   }
 }
