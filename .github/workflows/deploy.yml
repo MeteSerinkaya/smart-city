@@ -43,7 +43,8 @@ jobs:
       - name: Build Flutter web app
         run: |
           export PATH="$PATH:`pwd`/flutter/bin"
-          flutter build web --release
+          flutter build web --release --base-href="/smart-city/"
+
 
       - name: List build directory
         run: ls -la build/web/
