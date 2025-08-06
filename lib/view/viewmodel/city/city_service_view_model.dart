@@ -17,37 +17,113 @@ abstract class _CityServiceViewModelBase with Store {
   @observable
   List<CityServiceModel>? cityServiceList;
 
+  @observable
+  String? errorMessage;
+
+  @observable
+  bool hasError = false;
+
   @action
   Future<void> fetchCityService() async {
     isLoading = true;
-    cityServiceList = await _cityServiceRepository.getCityServices();
-    isLoading = false;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final result = await _cityServiceRepository.getCityServices();
+      if (result != null) {
+        cityServiceList = result;
+      } else {
+        cityServiceList = [];
+        hasError = true;
+        errorMessage = "Şehir hizmetleri yüklenemedi. Lütfen tekrar deneyin.";
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = e.toString();
+      cityServiceList = [];
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  @action
+  Future<void> retryFetchCityService() async {
+    await fetchCityService();
   }
 
   @action
   Future<bool> addCityService(CityServiceModel model) async {
     isLoading = true;
-    final result = await _cityServiceRepository.addCityService(model);
-    await fetchCityService();
-    isLoading = false;
-    return result != null;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final result = await _cityServiceRepository.addCityService(model);
+      if (result != null) {
+        await fetchCityService();
+        return true;
+      } else {
+        hasError = true;
+        errorMessage = "Şehir hizmeti eklenemedi. Lütfen tekrar deneyin.";
+        return false;
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      isLoading = false;
+    }
   }
 
   @action
   Future<bool> updateCityService(CityServiceModel model) async {
     isLoading = true;
-    final result = await _cityServiceRepository.updateCityService(model);
-    await fetchCityService();
-    isLoading = false;
-    return result != null;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final result = await _cityServiceRepository.updateCityService(model);
+      if (result != null) {
+        await fetchCityService();
+        return true;
+      } else {
+        hasError = true;
+        errorMessage = "Şehir hizmeti güncellenemedi. Lütfen tekrar deneyin.";
+        return false;
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      isLoading = false;
+    }
   }
 
   @action
   Future<bool> deleteCityService(int id) async {
     isLoading = true;
-    final result = await _cityServiceRepository.deleteCityService(id);
-    await fetchCityService();
-    isLoading = false;
-    return result;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final result = await _cityServiceRepository.deleteCityService(id);
+      if (result) {
+        await fetchCityService();
+        return true;
+      } else {
+        hasError = true;
+        errorMessage = "Şehir hizmeti silinemedi. Lütfen tekrar deneyin.";
+        return false;
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      isLoading = false;
+    }
   }
 }

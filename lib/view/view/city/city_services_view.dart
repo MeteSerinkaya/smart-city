@@ -125,21 +125,15 @@ class CityServicesView extends StatelessWidget {
             final cityServices = cityServiceViewModel.cityServiceList ?? [];
 
             if (cityServiceViewModel.isLoading) {
-              return const Center(
-                child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()),
-              );
+              return _buildLoadingState();
+            }
+
+            if (cityServiceViewModel.hasError) {
+              return _buildErrorState(cityServiceViewModel);
             }
 
             if (cityServices.isEmpty) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text(
-                    'Henüz şehir hizmeti eklenmemiş.',
-                    style: TextStyle(fontSize: 18, color: Color(0xFF6B7280)),
-                  ),
-                ),
-              );
+              return _buildEmptyState();
             }
 
             return LayoutBuilder(
@@ -173,6 +167,123 @@ class CityServicesView extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Column(
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Şehir hizmetleri yükleniyor...',
+              style: TextStyle(
+                color: Color(0xFF6B7280),
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(CityServiceViewModel viewModel) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Color(0xFFEF4444),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Bir hata oluştu',
+              style: TextStyle(
+                color: Color(0xFF374151),
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              viewModel.errorMessage ?? 'Şehir hizmetleri yüklenirken bir sorun oluştu',
+              style: const TextStyle(
+                color: Color(0xFF6B7280),
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => viewModel.retryFetchCityService(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tekrar Dene'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8B5CF6),
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Color(0xFF8B5CF6),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.apps,
+                size: 48,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Henüz şehir hizmeti eklenmemiş',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF374151),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Yeni hizmetler eklendiğinde burada görünecek',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B7280),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

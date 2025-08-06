@@ -3,7 +3,6 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_city/view/viewmodel/news/news_view_model.dart';
 import 'package:smart_city/view/authentication/test/model/newsmodel/news_model.dart';
-import 'package:smart_city/core/components/loading/smart_loading_widget.dart';
 
 class NewsView extends StatefulWidget {
   const NewsView({super.key});
@@ -31,23 +30,89 @@ class _NewsViewState extends State<NewsView> {
       builder: (context) {
         final viewModel = Provider.of<NewsViewModel>(context, listen: false);
         
-        return SmartLoadingWidget(
-          isLoading: viewModel.isLoading,
-          hasError: viewModel.hasError,
-          errorMessage: viewModel.errorMessage,
-          onRetry: viewModel.retry,
-          child: _buildContent(viewModel),
-        );
+        if (viewModel.isLoading) {
+          return _buildLoadingState();
+        }
+        
+        if (viewModel.hasError) {
+          return _buildErrorState(viewModel);
+        }
+        
+        if (viewModel.newsList == null || viewModel.newsList!.isEmpty) {
+          return _buildEmptyState();
+        }
+        
+        return _buildNewsList(viewModel.newsList!);
       },
     );
   }
 
-  Widget _buildContent(NewsViewModel viewModel) {
-    if (viewModel.newsList == null || viewModel.newsList!.isEmpty) {
-      return _buildEmptyState();
-    }
-    
-    return _buildNewsList(viewModel.newsList!);
+  Widget _buildLoadingState() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Haberler yükleniyor...',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(NewsViewModel viewModel) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Color(0xFFEF4444),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Bir hata oluştu',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: const Color(0xFF374151),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            viewModel.errorMessage ?? 'Haberler yüklenirken bir sorun oluştu',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF6B7280),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () => viewModel.retryFetchNews(),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Tekrar Dene'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF59E0B),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEmptyState() {

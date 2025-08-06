@@ -17,39 +17,114 @@ abstract class _AnnouncementViewModelBase with Store {
   @observable
   List<AnnouncementModel>? announcementList;
 
+  @observable
+  String? errorMessage;
+
+  @observable
+  bool hasError = false;
+
   @action
   Future<void> fetchAnnouncement() async {
     isLoading = true;
-    final announcements = await _announcementRepository.getAnnouncement();
-    print("DEBUG announcements: $announcements");
-    announcementList = announcements;
-    isLoading = false;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final announcements = await _announcementRepository.getAnnouncement();
+      print("DEBUG announcements: $announcements");
+      if (announcements != null) {
+        announcementList = announcements;
+      } else {
+        announcementList = [];
+        hasError = true;
+        errorMessage = "Duyurular yüklenemedi. Lütfen tekrar deneyin.";
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = e.toString();
+      announcementList = [];
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  @action
+  Future<void> retryFetchAnnouncement() async {
+    await fetchAnnouncement();
   }
 
   @action
   Future<bool> addAnnouncement(AnnouncementModel model) async {
     isLoading = true;
-    final result = await _announcementRepository.addAnnouncement(model);
-    await fetchAnnouncement();
-    isLoading = false;
-    return result != null;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final result = await _announcementRepository.addAnnouncement(model);
+      if (result != null) {
+        await fetchAnnouncement();
+        return true;
+      } else {
+        hasError = true;
+        errorMessage = "Duyuru eklenemedi. Lütfen tekrar deneyin.";
+        return false;
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      isLoading = false;
+    }
   }
 
   @action
   Future<bool> updateAnnouncement(AnnouncementModel model) async {
     isLoading = true;
-    final result = await _announcementRepository.updateAnnouncement(model);
-    await fetchAnnouncement();
-    isLoading = false;
-    return result != null;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final result = await _announcementRepository.updateAnnouncement(model);
+      if (result != null) {
+        await fetchAnnouncement();
+        return true;
+      } else {
+        hasError = true;
+        errorMessage = "Duyuru güncellenemedi. Lütfen tekrar deneyin.";
+        return false;
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      isLoading = false;
+    }
   }
 
   @action
   Future<bool> deleteAnnouncement(int id) async {
     isLoading = true;
-    final result = await _announcementRepository.deleteAnnouncement(id);
-    await fetchAnnouncement();
-    isLoading = false;
-    return result;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final result = await _announcementRepository.deleteAnnouncement(id);
+      if (result) {
+        await fetchAnnouncement();
+        return true;
+      } else {
+        hasError = true;
+        errorMessage = "Duyuru silinemedi. Lütfen tekrar deneyin.";
+        return false;
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = e.toString();
+      return false;
+    } finally {
+      isLoading = false;
+    }
   }
 }

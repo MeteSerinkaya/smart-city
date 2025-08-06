@@ -1,7 +1,6 @@
 import 'package:mobx/mobx.dart';
 import 'package:smart_city/core/repository/news/news_repository.dart';
 import 'package:smart_city/view/authentication/test/model/newsmodel/news_model.dart';
-import 'package:smart_city/core/init/network/network_manager.dart';
 
 part 'news_view_model.g.dart';
 
@@ -16,68 +15,62 @@ abstract class _NewsViewModelBase with Store {
   bool isLoading = false;
 
   @observable
-  bool hasError = false;
-
-  @observable
-  String errorMessage = '';
-
-  @observable
   List<NewsModel>? newsList;
+
+  @observable
+  String? errorMessage;
+
+  @observable
+  bool hasError = false;
 
   @action
   Future<void> fetchNews() async {
+    isLoading = true;
+    hasError = false;
+    errorMessage = null;
+    
     try {
-      isLoading = true;
-      hasError = false;
-      errorMessage = '';
-      
       final result = await _newsRepository.getNews();
-      
       if (result != null) {
         newsList = result;
       } else {
+        newsList = [];
         hasError = true;
-        errorMessage = 'Veri yüklenemedi. Lütfen tekrar deneyin.';
+        errorMessage = "Veri yüklenemedi. Lütfen tekrar deneyin.";
       }
-    } on TimeoutException catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
-      print('NewsViewModel fetchNews timeout: $e');
     } catch (e) {
       hasError = true;
-      errorMessage = 'Beklenmeyen bir hata oluştu: $e';
-      print('NewsViewModel fetchNews error: $e');
+      errorMessage = e.toString();
+      newsList = [];
     } finally {
       isLoading = false;
     }
   }
 
   @action
+  Future<void> retryFetchNews() async {
+    await fetchNews();
+  }
+
+  @action
   Future<bool> addNews(NewsModel model) async {
+    isLoading = true;
+    hasError = false;
+    errorMessage = null;
+    
     try {
-      isLoading = true;
-      hasError = false;
-      errorMessage = '';
-      
       final result = await _newsRepository.addNews(model);
-      
       if (result != null) {
-        await fetchNews(); // Refresh the list
+        await fetchNews();
         return true;
       } else {
         hasError = true;
-        errorMessage = 'Haber eklenemedi. Lütfen tekrar deneyin.';
+        errorMessage = "Haber eklenemedi. Lütfen tekrar deneyin.";
         return false;
       }
-    } on TimeoutException catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
-      print('NewsViewModel addNews timeout: $e');
-      return false;
     } catch (e) {
       hasError = true;
-      errorMessage = 'Beklenmeyen bir hata oluştu: $e';
-      print('NewsViewModel addNews error: $e');
+      errorMessage = e.toString();
       return false;
     } finally {
       isLoading = false;
@@ -86,30 +79,23 @@ abstract class _NewsViewModelBase with Store {
 
   @action
   Future<bool> updateNews(NewsModel model) async {
+    isLoading = true;
+    hasError = false;
+    errorMessage = null;
+    
     try {
-      isLoading = true;
-      hasError = false;
-      errorMessage = '';
-      
       final result = await _newsRepository.updateNews(model);
-      
       if (result != null) {
-        await fetchNews(); // Refresh the list
+        await fetchNews();
         return true;
       } else {
         hasError = true;
-        errorMessage = 'Haber güncellenemedi. Lütfen tekrar deneyin.';
+        errorMessage = "Haber güncellenemedi. Lütfen tekrar deneyin.";
         return false;
       }
-    } on TimeoutException catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
-      print('NewsViewModel updateNews timeout: $e');
-      return false;
     } catch (e) {
       hasError = true;
-      errorMessage = 'Beklenmeyen bir hata oluştu: $e';
-      print('NewsViewModel updateNews error: $e');
+      errorMessage = e.toString();
       return false;
     } finally {
       isLoading = false;
@@ -118,44 +104,26 @@ abstract class _NewsViewModelBase with Store {
 
   @action
   Future<bool> deleteNews(int id) async {
+    isLoading = true;
+    hasError = false;
+    errorMessage = null;
+    
     try {
-      isLoading = true;
-      hasError = false;
-      errorMessage = '';
-      
       final result = await _newsRepository.deleteNews(id);
-      
       if (result) {
-        await fetchNews(); // Refresh the list
+        await fetchNews();
         return true;
       } else {
         hasError = true;
-        errorMessage = 'Haber silinemedi. Lütfen tekrar deneyin.';
+        errorMessage = "Haber silinemedi. Lütfen tekrar deneyin.";
         return false;
       }
-    } on TimeoutException catch (e) {
-      hasError = true;
-      errorMessage = e.toString();
-      print('NewsViewModel deleteNews timeout: $e');
-      return false;
     } catch (e) {
       hasError = true;
-      errorMessage = 'Beklenmeyen bir hata oluştu: $e';
-      print('NewsViewModel deleteNews error: $e');
+      errorMessage = e.toString();
       return false;
     } finally {
       isLoading = false;
     }
-  }
-
-  @action
-  void clearError() {
-    hasError = false;
-    errorMessage = '';
-  }
-
-  @action
-  void retry() {
-    fetchNews();
   }
 }

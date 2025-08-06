@@ -34,6 +34,10 @@ class _EventViewState extends State<EventView> {
           return _buildLoadingState();
         }
         
+        if (viewModel.hasError) {
+          return _buildErrorState(viewModel);
+        }
+        
         if (viewModel.eventList == null || viewModel.eventList!.isEmpty) {
           return _buildEmptyState();
         }
@@ -56,6 +60,54 @@ class _EventViewState extends State<EventView> {
             'Etkinlikler yükleniyor...',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: const Color(0xFF6B7280),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(EventViewModel viewModel) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Color(0xFFEF4444),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Bir hata oluştu',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: const Color(0xFF374151),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            viewModel.errorMessage ?? 'Etkinlikler yüklenirken bir sorun oluştu',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF6B7280),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () => viewModel.retryFetchEvents(),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Tekrar Dene'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
             ),
           ),
         ],
