@@ -246,25 +246,25 @@ class CityServicesView extends StatelessWidget {
   }
 
   Widget _buildEmptyState() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           children: [
             Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
                 color: Color(0xFF8B5CF6),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.apps,
                 size: 48,
                 color: Colors.white,
               ),
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'Henüz şehir hizmeti eklenmemiş',
               style: TextStyle(
                 fontSize: 18,
@@ -272,8 +272,8 @@ class CityServicesView extends StatelessWidget {
                 color: Color(0xFF374151),
               ),
             ),
-            SizedBox(height: 8),
-            Text(
+            const SizedBox(height: 8),
+            const Text(
               'Yeni hizmetler eklendiğinde burada görünecek',
               style: TextStyle(
                 fontSize: 14,
