@@ -302,6 +302,42 @@ class _NewsViewState extends State<NewsView> {
     }
   }
 
+  Widget _buildSeeAllSection(bool isMobile) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF59E0B),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'TÜMÜNÜ GÖRÜNTÜLE',
+          style: TextStyle(
+            fontFamily: 'Roboto',
+            fontSize: isMobile ? 14 : 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterText() {
+    return Center(
+      child: Text(
+        'Daha fazla haber için takipte kalın',
+        style: TextStyle(
+          fontFamily: 'Roboto',
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: Colors.white.withOpacity(0.7),
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
   Widget _buildNewsSection(List<NewsModel> news) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
