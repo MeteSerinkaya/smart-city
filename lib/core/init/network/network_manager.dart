@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:smart_city/core/base/model/base_model.dart';
 import 'package:smart_city/core/constants/enums/locale_keys_enum.dart';
+import 'package:smart_city/core/constants/app/app_constants.dart';
 import 'package:smart_city/core/init/cache/locale_manager.dart';
 
 class NetworkManager {
@@ -12,29 +13,19 @@ class NetworkManager {
     return _instance!;
   }
 
+  late final Dio dio;
+
   NetworkManager._init() {
-    final baseOptions = BaseOptions(
-      baseUrl: "https://localhost:7276/api/",
-      connectTimeout: const Duration(seconds: 3), // Reduced from 10 to 3 seconds
-      receiveTimeout: const Duration(seconds: 3), // Reduced from 10 to 3 seconds
-      sendTimeout: const Duration(seconds: 3), // Reduced from 10 to 3 seconds
-      headers: {"val": LocaleManager.instance.getStringValue(PreferencesKeys.TOKEN) ?? ""},
-    );
-
-    dio = Dio(baseOptions);
-
-    // Enhanced Retry interceptor with shorter delays
-    dio.interceptors.add(
-      RetryInterceptor(
-        dio: dio,
-        logPrint: print,
-        retries: 1, // Reduced from 2 to 1 retry
-        retryDelays: const [
-          Duration(milliseconds: 500), // Reduced from 1 second to 500ms
-        ],
+    dio = Dio(
+      BaseOptions(
+        baseUrl: AppConstants.baseUrl,
+        connectTimeout: const Duration(seconds: 1), // Reduced from 3 to 1 second
+        receiveTimeout: const Duration(seconds: 1), // Reduced from 3 to 1 second
+        sendTimeout: const Duration(seconds: 1), // Reduced from 3 to 1 second
+        headers: {"val": LocaleManager.instance.getStringValue(PreferencesKeys.TOKEN) ?? ""},
       ),
     );
-
+    dio.interceptors.add(RetryInterceptor());
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
@@ -66,7 +57,6 @@ class NetworkManager {
       ),
     );
   }
-  late Dio dio;
 
   Future dioGet<T extends BaseModel>(String path, T model) async {
     try {
@@ -131,49 +121,18 @@ class NetworkManager {
   }
 }
 
-// Enhanced Retry Interceptor
 class RetryInterceptor extends Interceptor {
-  final Dio dio;
-  final Function(String) logPrint;
-  final int retries;
-  final List<Duration> retryDelays;
-
-  RetryInterceptor({
-    required this.dio,
-    required this.logPrint,
-    this.retries = 1,
-    this.retryDelays = const [Duration(milliseconds: 500)],
-  });
-
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) async {
-    var extra = err.requestOptions.extra;
-    var retryCount = extra['retryCount'] ?? 0;
-
-    if (_shouldRetry(err) && retryCount < retries) {
-      logPrint('Retrying request (${retryCount + 1}/$retries)');
-
-      await Future.delayed(retryDelays[retryCount]);
-
-      extra['retryCount'] = retryCount + 1;
-
-      try {
-        final response = await dio.fetch(err.requestOptions);
-        handler.resolve(response);
-        return;
-      } catch (e) {
-        handler.next(err);
-        return;
-      }
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    if (err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.sendTimeout) {
+      // Timeout durumunda hemen hata döndür, retry yapma
+      handler.reject(err);
+      return;
     }
 
-    handler.next(err);
-  }
-
-  bool _shouldRetry(DioException err) {
-    return err.type == DioExceptionType.connectionTimeout ||
-        err.type == DioExceptionType.receiveTimeout ||
-        err.type == DioExceptionType.sendTimeout ||
-        err.type == DioExceptionType.connectionError;
+    // Diğer hatalar için de hemen döndür
+    handler.reject(err);
   }
 }

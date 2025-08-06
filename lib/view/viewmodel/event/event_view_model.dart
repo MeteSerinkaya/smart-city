@@ -32,17 +32,17 @@ abstract class _EventViewModelBase with Store {
     try {
       final events = await _eventRepository.getEvents();
       print('DEBUG fetchEvents response: $events');
+      // Hemen boş state'e geç, hiç bekleme yok
       if (events != null && events.isNotEmpty) {
         eventList = events;
       } else {
-        // API yanıt vermezse veya boş data gelirse hemen boş state'e geç
         eventList = [];
-        hasError = false; // Error state gösterme, boş state göster
+        hasError = false;
         errorMessage = null;
       }
       print('DEBUG eventList after set: $eventList');
     } catch (e) {
-      // Hata durumunda da boş state'e geç, error state gösterme
+      // Hata durumunda da hemen boş state'e geç
       hasError = false;
       errorMessage = null;
       eventList = [];
@@ -68,11 +68,11 @@ abstract class _EventViewModelBase with Store {
         await fetchEvents();
         return true;
       } else {
-        hasError = false; // Error state gösterme
+        hasError = false;
         return false;
       }
     } catch (e) {
-      hasError = false; // Error state gösterme
+      hasError = false;
       return false;
     } finally {
       isLoading = false;
@@ -91,11 +91,11 @@ abstract class _EventViewModelBase with Store {
         await fetchEvents();
         return true;
       } else {
-        hasError = false; // Error state gösterme
+        hasError = false;
         return false;
       }
     } catch (e) {
-      hasError = false; // Error state gösterme
+      hasError = false;
       return false;
     } finally {
       isLoading = false;
@@ -114,11 +114,11 @@ abstract class _EventViewModelBase with Store {
         await fetchEvents();
         return true;
       } else {
-        hasError = false; // Error state gösterme
+        hasError = false;
         return false;
       }
     } catch (e) {
-      hasError = false; // Error state gösterme
+      hasError = false;
       return false;
     } finally {
       isLoading = false;

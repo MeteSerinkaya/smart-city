@@ -31,16 +31,16 @@ abstract class _ProjectViewModelBase with Store {
     
     try {
       final result = await _projectRepository.getProjects();
+      // Hemen boş state'e geç, hiç bekleme yok
       if (result != null && result.isNotEmpty) {
         projectList = result;
       } else {
-        // API yanıt vermezse veya boş data gelirse hemen boş state'e geç
         projectList = [];
-        hasError = false; // Error state gösterme, boş state göster
+        hasError = false;
         errorMessage = null;
       }
     } catch (e) {
-      // Hata durumunda da boş state'e geç, error state gösterme
+      // Hata durumunda da hemen boş state'e geç
       hasError = false;
       errorMessage = null;
       projectList = [];
@@ -66,11 +66,11 @@ abstract class _ProjectViewModelBase with Store {
         await fetchProjects();
         return true;
       } else {
-        hasError = false; // Error state gösterme
+        hasError = false;
         return false;
       }
     } catch (e) {
-      hasError = false; // Error state gösterme
+      hasError = false;
       return false;
     } finally {
       isLoading = false;
@@ -89,11 +89,11 @@ abstract class _ProjectViewModelBase with Store {
         await fetchProjects();
         return true;
       } else {
-        hasError = false; // Error state gösterme
+        hasError = false;
         return false;
       }
     } catch (e) {
-      hasError = false; // Error state gösterme
+      hasError = false;
       return false;
     } finally {
       isLoading = false;
@@ -112,11 +112,11 @@ abstract class _ProjectViewModelBase with Store {
         await fetchProjects();
         return true;
       } else {
-        hasError = false; // Error state gösterme
+        hasError = false;
         return false;
       }
     } catch (e) {
-      hasError = false; // Error state gösterme
+      hasError = false;
       return false;
     } finally {
       isLoading = false;

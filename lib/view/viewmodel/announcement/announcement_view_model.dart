@@ -32,16 +32,16 @@ abstract class _AnnouncementViewModelBase with Store {
     try {
       final announcements = await _announcementRepository.getAnnouncement();
       print("DEBUG announcements: $announcements");
+      // Hemen boş state'e geç, hiç bekleme yok
       if (announcements != null && announcements.isNotEmpty) {
         announcementList = announcements;
       } else {
-        // API yanıt vermezse veya boş data gelirse hemen boş state'e geç
         announcementList = [];
-        hasError = false; // Error state gösterme, boş state göster
+        hasError = false;
         errorMessage = null;
       }
     } catch (e) {
-      // Hata durumunda da boş state'e geç, error state gösterme
+      // Hata durumunda da hemen boş state'e geç
       hasError = false;
       errorMessage = null;
       announcementList = [];
@@ -67,11 +67,11 @@ abstract class _AnnouncementViewModelBase with Store {
         await fetchAnnouncement();
         return true;
       } else {
-        hasError = false; // Error state gösterme
+        hasError = false;
         return false;
       }
     } catch (e) {
-      hasError = false; // Error state gösterme
+      hasError = false;
       return false;
     } finally {
       isLoading = false;
@@ -90,11 +90,11 @@ abstract class _AnnouncementViewModelBase with Store {
         await fetchAnnouncement();
         return true;
       } else {
-        hasError = false; // Error state gösterme
+        hasError = false;
         return false;
       }
     } catch (e) {
-      hasError = false; // Error state gösterme
+      hasError = false;
       return false;
     } finally {
       isLoading = false;
@@ -113,11 +113,11 @@ abstract class _AnnouncementViewModelBase with Store {
         await fetchAnnouncement();
         return true;
       } else {
-        hasError = false; // Error state gösterme
+        hasError = false;
         return false;
       }
     } catch (e) {
-      hasError = false; // Error state gösterme
+      hasError = false;
       return false;
     } finally {
       isLoading = false;
