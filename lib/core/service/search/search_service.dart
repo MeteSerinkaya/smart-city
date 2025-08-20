@@ -17,21 +17,22 @@ abstract class ISearchService {
 }
 
 class SearchService extends ISearchService {
-  String _buildFullImageUrl(String? imagePath) {
+    String _buildFullImageUrl(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) return '';
-    
+ 
     // Eğer zaten tam URL ise (http:// veya https:// ile başlıyorsa) direkt döndür
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      print('🔍 FULL URL (zaten tam): $imagePath');
       return imagePath;
     }
-    
+ 
     // Relative path ise base URL ile birleştir
     final baseUrl = AppConstants.baseUrl;
-    if (imagePath.startsWith('/')) {
-      return '$baseUrl$imagePath';
-    } else {
-      return '$baseUrl/$imagePath';
-    }
+    final fullUrl = imagePath.startsWith('/') ? '$baseUrl$imagePath' : '$baseUrl/$imagePath';
+    print('🔍 RELATIVE PATH: $imagePath');
+    print('🔍 BASE URL: $baseUrl');
+    print('🔍 FULL URL (oluşturulan): $fullUrl');
+    return fullUrl;
   }
 
   @override
@@ -39,84 +40,113 @@ class SearchService extends ISearchService {
     try {
       // Use the new unified search endpoint
       final response = await NetworkManager.instance.dio.get('search', queryParameters: {'query': query});
-      
+
       if (response.statusCode == 200 && response.data != null) {
         final results = <SearchModel>[];
         final data = response.data;
-        
+
         // Add news results
         if (data['news'] != null) {
           for (var news in data['news']) {
-            results.add(SearchModel(
-              id: news['id'],
-              title: news['title'],
-              content: news['content'],
-              // Relative path'i tam URL'e çevir
-              imageUrl: _buildFullImageUrl(news['imageUrl'] ?? news['image'] ?? news['heroImageUrl'] ?? news['heroImage']),
-              type: 'news',
-              publishedAt: news['publishedAt'] != null ? DateTime.tryParse(news['publishedAt']) : null,
-            ));
+            final newsImageUrl = _buildFullImageUrl(
+              news['imageUrl'] ?? news['image'] ?? news['heroImageUrl'] ?? news['heroImage'],
+            );
+            print('🔍 NEWS FINAL imageUrl: $newsImageUrl');
+            
+            results.add(
+              SearchModel(
+                id: news['id'],
+                title: news['title'],
+                content: news['content'],
+                // Relative path'i tam URL'e çevir
+                imageUrl: newsImageUrl,
+                type: 'news',
+                publishedAt: news['publishedAt'] != null ? DateTime.tryParse(news['publishedAt']) : null,
+              ),
+            );
           }
         }
-        
+
         // Add announcement results
         if (data['announcements'] != null) {
           for (var announcement in data['announcements']) {
-            results.add(SearchModel(
-              id: announcement['id'],
-              title: announcement['title'],
-              content: announcement['content'],
-              // AnnouncementModel'de image alanı yok
-              type: 'announcement',
-              date: announcement['date'] != null ? DateTime.tryParse(announcement['date']) : null,
-            ));
+            results.add(
+              SearchModel(
+                id: announcement['id'],
+                title: announcement['title'],
+                content: announcement['content'],
+                // AnnouncementModel'de image alanı yok
+                type: 'announcement',
+                date: announcement['date'] != null ? DateTime.tryParse(announcement['date']) : null,
+              ),
+            );
           }
         }
-        
+
         // Add project results
         if (data['projects'] != null) {
           for (var project in data['projects']) {
-            results.add(SearchModel(
-              id: project['id'],
-              title: project['title'],
-              description: project['description'],
-              // Relative path'i tam URL'e çevir
-              imageUrl: _buildFullImageUrl(project['imageUrl'] ?? project['image'] ?? project['heroImageUrl'] ?? project['heroImage']),
-              type: 'project',
-            ));
+            final projectImageUrl = _buildFullImageUrl(
+              project['imageUrl'] ?? project['image'] ?? project['heroImageUrl'] ?? project['heroImage'],
+            );
+            print('🔍 PROJECT FINAL imageUrl: $projectImageUrl');
+            
+            results.add(
+              SearchModel(
+                id: project['id'],
+                title: project['title'],
+                description: project['description'],
+                // Relative path'i tam URL'e çevir
+                imageUrl: projectImageUrl,
+                type: 'project',
+              ),
+            );
           }
         }
-        
+
         // Add city service results
         if (data['cityServices'] != null) {
           for (var service in data['cityServices']) {
-            results.add(SearchModel(
-              id: service['id'],
-              title: service['title'],
-              description: service['description'],
-              // Relative path'i tam URL'e çevir
-              imageUrl: _buildFullImageUrl(service['imageUrl'] ?? service['image'] ?? service['heroImageUrl'] ?? service['heroImage']),
-              iconUrl: _buildFullImageUrl(service['iconUrl']),
-              type: 'city_service',
-            ));
+            final serviceImageUrl = _buildFullImageUrl(
+              service['imageUrl'] ?? service['image'] ?? service['heroImageUrl'] ?? service['heroImage'],
+            );
+            final serviceIconUrl = _buildFullImageUrl(service['iconUrl']);
+            print('🔍 CITY SERVICE FINAL imageUrl: $serviceImageUrl');
+            print('🔍 CITY SERVICE FINAL iconUrl: $serviceIconUrl');
+            
+            results.add(
+              SearchModel(
+                id: service['id'],
+                title: service['title'],
+                description: service['description'],
+                // Relative path'i tam URL'e çevir
+                imageUrl: serviceImageUrl,
+                iconUrl: serviceIconUrl,
+                type: 'city_service',
+              ),
+            );
           }
         }
-        
+
         // Add event results
         if (data['events'] != null) {
           for (var event in data['events']) {
-            results.add(SearchModel(
-              id: event['id'],
-              title: event['title'],
-              description: event['description'],
-              // Relative path'i tam URL'e çevir
-              imageUrl: _buildFullImageUrl(event['imageUrl'] ?? event['image'] ?? event['heroImageUrl'] ?? event['heroImage']),
-              type: 'event',
-              date: event['date'] != null ? DateTime.tryParse(event['date']) : null,
-            ));
+            results.add(
+              SearchModel(
+                id: event['id'],
+                title: event['title'],
+                description: event['description'],
+                // Relative path'i tam URL'e çevir
+                imageUrl: _buildFullImageUrl(
+                  event['imageUrl'] ?? event['image'] ?? event['heroImageUrl'] ?? event['heroImage'],
+                ),
+                type: 'event',
+                date: event['date'] != null ? DateTime.tryParse(event['date']) : null,
+              ),
+            );
           }
         }
-        
+
         return results;
       }
       return null;
@@ -225,4 +255,4 @@ class SearchService extends ISearchService {
       return null;
     }
   }
-} 
+}
