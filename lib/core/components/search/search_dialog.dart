@@ -353,6 +353,7 @@ class _SearchDialogState extends State<SearchDialog> {
           fit: BoxFit.cover,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
+            print('🔍 SEARCH DIALOG - Loading progress: ${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes}');
             return Container(
               width: 48,
               height: 48,
@@ -371,7 +372,8 @@ class _SearchDialogState extends State<SearchDialog> {
             );
           },
           errorBuilder: (context, error, stackTrace) {
-            print('🔍 SEARCH DIALOG - Image load error: $error');
+            print('🔍 SEARCH DIALOG - Image load error for URL: $imageUrl');
+            print('🔍 SEARCH DIALOG - Error details: $error');
             print('🔍 SEARCH DIALOG - Stack trace: $stackTrace');
             return _buildFallbackIcon(result.type ?? '');
           },
