@@ -33,6 +33,7 @@ class SearchService extends ISearchService {
               id: news['id'],
               title: news['title'],
               content: news['content'],
+              description: news['description'],
               imageUrl: news['imageUrl'],
               type: 'news',
               publishedAt: news['publishedAt'] != null ? DateTime.tryParse(news['publishedAt']) : null,
@@ -47,6 +48,8 @@ class SearchService extends ISearchService {
               id: announcement['id'],
               title: announcement['title'],
               content: announcement['content'],
+              description: announcement['description'],
+              imageUrl: announcement['imageUrl'],
               type: 'announcement',
               date: announcement['date'] != null ? DateTime.tryParse(announcement['date']) : null,
             ));
@@ -59,6 +62,7 @@ class SearchService extends ISearchService {
             results.add(SearchModel(
               id: project['id'],
               title: project['title'],
+              content: project['content'],
               description: project['description'],
               imageUrl: project['imageUrl'],
               type: 'project',
@@ -72,7 +76,9 @@ class SearchService extends ISearchService {
             results.add(SearchModel(
               id: service['id'],
               title: service['title'],
+              content: service['content'],
               description: service['description'],
+              imageUrl: service['imageUrl'],
               iconUrl: service['iconUrl'],
               type: 'city_service',
             ));
@@ -85,6 +91,7 @@ class SearchService extends ISearchService {
             results.add(SearchModel(
               id: event['id'],
               title: event['title'],
+              content: event['content'],
               description: event['description'],
               imageUrl: event['imageUrl'],
               type: 'event',

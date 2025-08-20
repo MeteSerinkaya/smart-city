@@ -11,10 +11,12 @@ class AnnouncementModel extends BaseModel<AnnouncementModel> {
   String? title;
   @JsonKey(name: 'content')
   String? content;
+  @JsonKey(name: 'imageUrl')
+  String? imageUrl;
   @JsonKey(name: 'date', fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
   DateTime? date;
 
-  AnnouncementModel({this.id, this.title, this.content, this.date});
+  AnnouncementModel({this.id, this.title, this.content, this.imageUrl, this.date});
 
   factory AnnouncementModel.fromJson(Map<String, dynamic> json) => _$AnnouncementModelFromJson(json);
   @override

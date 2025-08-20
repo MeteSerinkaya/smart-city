@@ -295,64 +295,156 @@ class _SearchDialogState extends State<SearchDialog> {
     );
   }
 
+
+
   Widget _buildResultCard(SearchModel result) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 1,
-      child: ListTile(
-        leading: result.imageUrl != null || result.iconUrl != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: Image.network(
-                  result.imageUrl ?? result.iconUrl ?? '',
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(6)),
-                      child: Icon(_getIconForType(result.type ?? ''), color: Colors.grey.shade600, size: 20),
-                    );
-                  },
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).pop();
+        _navigateToDetail(result);
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Resim veya Icon
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              )
-            : Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(6)),
-                child: Icon(_getIconForType(result.type ?? ''), color: Colors.grey.shade600, size: 20),
+                child: result.imageUrl != null && result.imageUrl!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          result.imageUrl!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildFallbackIcon(result.type ?? '');
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return _buildFallbackIcon(result.type ?? '');
+                          },
+                        ),
+                      )
+                    : result.iconUrl != null && result.iconUrl!.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              result.iconUrl!,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildFallbackIcon(result.type ?? '');
+                              },
+                            ),
+                          )
+                        : _buildFallbackIcon(result.type ?? ''),
               ),
-        title: Text(
-          result.title ?? '',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 16),
+              // İçerik
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result.title ?? '',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: Color(0xFF333333),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    if (result.content != null && result.content!.isNotEmpty)
+                      Text(
+                        result.content!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    if (result.description != null && result.description!.isNotEmpty)
+                      Text(
+                        result.description!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    // Tip etiketi
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getTypeColor(result.type ?? '').withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _getTypeColor(result.type ?? '').withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        _getTypeLabel(result.type ?? ''),
+                        style: TextStyle(
+                          color: _getTypeColor(result.type ?? ''),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Ok işareti
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey.shade400,
+                size: 16,
+              ),
+            ],
+          ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (result.content != null && result.content!.isNotEmpty)
-              Text(
-                result.content!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-              ),
-            if (result.description != null && result.description!.isNotEmpty)
-              Text(
-                result.description!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-              ),
-          ],
-        ),
-        onTap: () {
-          Navigator.of(context).pop();
-          _navigateToDetail(result);
-        },
+      ),
+    );
+  }
+
+  Widget _buildFallbackIcon(String type) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        color: _getTypeColor(type).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        _getIconForType(type),
+        color: _getTypeColor(type),
+        size: 24,
       ),
     );
   }
@@ -367,8 +459,44 @@ class _SearchDialogState extends State<SearchDialog> {
         return Icons.work_outline;
       case 'city_service':
         return Icons.apps;
+      case 'event':
+        return Icons.event;
       default:
         return Icons.info;
+    }
+  }
+
+  Color _getTypeColor(String type) {
+    switch (type) {
+      case 'news':
+        return const Color(0xFF10B981);
+      case 'announcement':
+        return const Color(0xFF0A4A9D);
+      case 'project':
+        return const Color(0xFFF59E0B);
+      case 'city_service':
+        return const Color(0xFF8B5CF6);
+      case 'event':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF6B7280);
+    }
+  }
+
+  String _getTypeLabel(String type) {
+    switch (type) {
+      case 'news':
+        return 'Haber';
+      case 'announcement':
+        return 'Duyuru';
+      case 'project':
+        return 'Proje';
+      case 'city_service':
+        return 'Hizmet';
+      case 'event':
+        return 'Etkinlik';
+      default:
+        return 'Diğer';
     }
   }
 
