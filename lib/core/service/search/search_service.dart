@@ -33,7 +33,8 @@ class SearchService extends ISearchService {
               id: news['id'],
               title: news['title'],
               content: news['content'],
-              imageUrl: news['imageUrl'], // NewsModel'de zaten var
+              // Backend'den gelen tüm olası resim alanlarını kontrol et
+              imageUrl: news['imageUrl'] ?? news['image'] ?? news['heroImageUrl'] ?? news['heroImage'],
               type: 'news',
               publishedAt: news['publishedAt'] != null ? DateTime.tryParse(news['publishedAt']) : null,
             ));
@@ -61,7 +62,8 @@ class SearchService extends ISearchService {
               id: project['id'],
               title: project['title'],
               description: project['description'],
-              imageUrl: project['imageUrl'], // ProjectModel'de zaten var
+              // Backend'den gelen tüm olası resim alanlarını kontrol et
+              imageUrl: project['imageUrl'] ?? project['image'] ?? project['heroImageUrl'] ?? project['heroImage'],
               type: 'project',
             ));
           }
@@ -74,7 +76,8 @@ class SearchService extends ISearchService {
               id: service['id'],
               title: service['title'],
               description: service['description'],
-              // CityServiceModel'de iconUrl var, onu kullan
+              // Backend'den gelen tüm olası resim alanlarını kontrol et
+              imageUrl: service['imageUrl'] ?? service['image'] ?? service['heroImageUrl'] ?? service['heroImage'],
               iconUrl: service['iconUrl'],
               type: 'city_service',
             ));
@@ -88,7 +91,8 @@ class SearchService extends ISearchService {
               id: event['id'],
               title: event['title'],
               description: event['description'],
-              imageUrl: event['imageUrl'], // EventModel'de zaten var
+              // Backend'den gelen tüm olası resim alanlarını kontrol et
+              imageUrl: event['imageUrl'] ?? event['image'] ?? event['heroImageUrl'] ?? event['heroImage'],
               type: 'event',
               date: event['date'] != null ? DateTime.tryParse(event['date']) : null,
             ));
