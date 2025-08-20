@@ -338,6 +338,11 @@ class _SearchDialogState extends State<SearchDialog> {
     // Önce imageUrl'i kontrol et, sonra iconUrl'i
     final imageUrl = result.imageUrl ?? result.iconUrl;
     
+    print('🔍 SEARCH DIALOG - Type: ${result.type}');
+    print('🔍 SEARCH DIALOG - imageUrl: ${result.imageUrl}');
+    print('🔍 SEARCH DIALOG - iconUrl: ${result.iconUrl}');
+    print('🔍 SEARCH DIALOG - Final URL: $imageUrl');
+    
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -366,6 +371,8 @@ class _SearchDialogState extends State<SearchDialog> {
             );
           },
           errorBuilder: (context, error, stackTrace) {
+            print('🔍 SEARCH DIALOG - Image load error: $error');
+            print('🔍 SEARCH DIALOG - Stack trace: $stackTrace');
             return _buildFallbackIcon(result.type ?? '');
           },
         ),
@@ -373,6 +380,7 @@ class _SearchDialogState extends State<SearchDialog> {
     }
     
     // Resim yoksa fallback icon göster
+    print('🔍 SEARCH DIALOG - No image, showing fallback icon');
     return _buildFallbackIcon(result.type ?? '');
   }
 

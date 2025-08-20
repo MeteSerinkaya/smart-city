@@ -22,7 +22,6 @@ class SearchService extends ISearchService {
  
     // Eğer zaten tam URL ise (http:// veya https:// ile başlıyorsa) direkt döndür
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      print('🔍 FULL URL (zaten tam): $imagePath');
       return imagePath;
     }
  
@@ -33,11 +32,6 @@ class SearchService extends ISearchService {
     final cleanImagePath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
     final fullUrl = '$cleanBaseUrl/$cleanImagePath';
     
-    print('🔍 RELATIVE PATH: $imagePath');
-    print('🔍 BASE URL: $baseUrl');
-    print('🔍 CLEAN BASE URL: $cleanBaseUrl');
-    print('🔍 CLEAN IMAGE PATH: $cleanImagePath');
-    print('🔍 FULL URL (oluşturulan): $fullUrl');
     return fullUrl;
   }
 
@@ -54,18 +48,15 @@ class SearchService extends ISearchService {
         // Add news results
         if (data['news'] != null) {
           for (var news in data['news']) {
-            final newsImageUrl = _buildFullImageUrl(
-              news['imageUrl'] ?? news['image'] ?? news['heroImageUrl'] ?? news['heroImage'],
-            );
-            print('🔍 NEWS FINAL imageUrl: $newsImageUrl');
-            
             results.add(
               SearchModel(
                 id: news['id'],
                 title: news['title'],
                 content: news['content'],
                 // Relative path'i tam URL'e çevir
-                imageUrl: newsImageUrl,
+                imageUrl: _buildFullImageUrl(
+                  news['imageUrl'] ?? news['image'] ?? news['heroImageUrl'] ?? news['heroImage'],
+                ),
                 type: 'news',
                 publishedAt: news['publishedAt'] != null ? DateTime.tryParse(news['publishedAt']) : null,
               ),
@@ -92,18 +83,15 @@ class SearchService extends ISearchService {
         // Add project results
         if (data['projects'] != null) {
           for (var project in data['projects']) {
-            final projectImageUrl = _buildFullImageUrl(
-              project['imageUrl'] ?? project['image'] ?? project['heroImageUrl'] ?? project['heroImage'],
-            );
-            print('🔍 PROJECT FINAL imageUrl: $projectImageUrl');
-            
             results.add(
               SearchModel(
                 id: project['id'],
                 title: project['title'],
                 description: project['description'],
                 // Relative path'i tam URL'e çevir
-                imageUrl: projectImageUrl,
+                imageUrl: _buildFullImageUrl(
+                  project['imageUrl'] ?? project['image'] ?? project['heroImageUrl'] ?? project['heroImage'],
+                ),
                 type: 'project',
               ),
             );
@@ -113,17 +101,14 @@ class SearchService extends ISearchService {
         // Add city service results
         if (data['cityServices'] != null) {
           for (var service in data['cityServices']) {
-            final serviceIconUrl = _buildFullImageUrl(service['iconUrl']);
-            print('🔍 CITY SERVICE FINAL iconUrl: $serviceIconUrl');
-            
             results.add(
               SearchModel(
                 id: service['id'],
                 title: service['title'],
                 description: service['description'],
                 // Şehir hizmetleri için iconUrl'i imageUrl olarak kullan
-                imageUrl: serviceIconUrl,
-                iconUrl: serviceIconUrl,
+                imageUrl: _buildFullImageUrl(service['iconUrl']),
+                iconUrl: _buildFullImageUrl(service['iconUrl']),
                 type: 'city_service',
               ),
             );
