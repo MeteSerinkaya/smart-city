@@ -47,7 +47,7 @@ class SearchService extends ISearchService {
               id: announcement['id'],
               title: announcement['title'],
               content: announcement['content'],
-              imageUrl: announcement['imageUrl'], // Şimdi AnnouncementModel'de var
+              // AnnouncementModel'de image alanı yok
               type: 'announcement',
               date: announcement['date'] != null ? DateTime.tryParse(announcement['date']) : null,
             ));
