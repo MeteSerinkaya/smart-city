@@ -33,7 +33,7 @@ class SearchService extends ISearchService {
               id: news['id'],
               title: news['title'],
               content: news['content'],
-              imageUrl: news['imageUrl'] ?? news['image'] ?? news['heroImageUrl'],
+              imageUrl: news['imageUrl'], // NewsModel'de zaten var
               type: 'news',
               publishedAt: news['publishedAt'] != null ? DateTime.tryParse(news['publishedAt']) : null,
             ));
@@ -47,7 +47,7 @@ class SearchService extends ISearchService {
               id: announcement['id'],
               title: announcement['title'],
               content: announcement['content'],
-              imageUrl: announcement['imageUrl'] ?? announcement['image'] ?? announcement['heroImageUrl'],
+              imageUrl: announcement['imageUrl'], // Şimdi AnnouncementModel'de var
               type: 'announcement',
               date: announcement['date'] != null ? DateTime.tryParse(announcement['date']) : null,
             ));
@@ -61,8 +61,7 @@ class SearchService extends ISearchService {
               id: project['id'],
               title: project['title'],
               description: project['description'],
-              content: project['content'],
-              imageUrl: project['imageUrl'] ?? project['image'] ?? project['heroImageUrl'],
+              imageUrl: project['imageUrl'], // ProjectModel'de zaten var
               type: 'project',
             ));
           }
@@ -75,7 +74,7 @@ class SearchService extends ISearchService {
               id: service['id'],
               title: service['title'],
               description: service['description'],
-              imageUrl: service['imageUrl'] ?? service['image'] ?? service['heroImageUrl'],
+              // CityServiceModel'de iconUrl var, onu kullan
               iconUrl: service['iconUrl'],
               type: 'city_service',
             ));
@@ -89,8 +88,7 @@ class SearchService extends ISearchService {
               id: event['id'],
               title: event['title'],
               description: event['description'],
-              content: event['content'],
-              imageUrl: event['imageUrl'] ?? event['image'] ?? event['heroImageUrl'],
+              imageUrl: event['imageUrl'], // EventModel'de zaten var
               type: 'event',
               date: event['date'] != null ? DateTime.tryParse(event['date']) : null,
             ));
