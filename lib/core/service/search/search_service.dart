@@ -1,4 +1,5 @@
 import 'package:smart_city/core/init/network/network_manager.dart';
+import 'package:smart_city/core/constants/app/app_constants.dart';
 import 'package:smart_city/view/authentication/test/model/searchmodel/search_model.dart';
 import 'package:smart_city/view/authentication/test/model/newsmodel/news_model.dart';
 import 'package:smart_city/view/authentication/test/model/announcementmodel/announcement_model.dart';
@@ -25,7 +26,7 @@ class SearchService extends ISearchService {
     }
     
     // Relative path ise base URL ile birleştir
-    final baseUrl = NetworkManager.instance.baseUrl;
+    final baseUrl = AppConstants.baseUrl;
     if (imagePath.startsWith('/')) {
       return '$baseUrl$imagePath';
     } else {
