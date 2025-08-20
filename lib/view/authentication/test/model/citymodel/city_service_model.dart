@@ -11,12 +11,10 @@ class CityServiceModel extends BaseModel<CityServiceModel> {
   String? title;
   @JsonKey(name: 'description')
   String? description;
-  @JsonKey(name: 'imageUrl')
-  String? imageUrl;
   @JsonKey(name: 'iconUrl')
   String? iconUrl;
 
-  CityServiceModel({this.id, this.title, this.description, this.imageUrl, this.iconUrl});
+  CityServiceModel({this.id, this.title, this.description, this.iconUrl});
 
   factory CityServiceModel.fromJson(Map<String, dynamic> json) => _$CityServiceModelFromJson(json);
   @override

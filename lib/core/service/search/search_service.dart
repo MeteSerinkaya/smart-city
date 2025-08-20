@@ -33,8 +33,7 @@ class SearchService extends ISearchService {
               id: news['id'],
               title: news['title'],
               content: news['content'],
-              description: news['description'],
-              imageUrl: news['imageUrl'],
+              imageUrl: news['imageUrl'] ?? news['image'] ?? news['heroImageUrl'],
               type: 'news',
               publishedAt: news['publishedAt'] != null ? DateTime.tryParse(news['publishedAt']) : null,
             ));
@@ -48,8 +47,7 @@ class SearchService extends ISearchService {
               id: announcement['id'],
               title: announcement['title'],
               content: announcement['content'],
-              description: announcement['description'],
-              imageUrl: announcement['imageUrl'],
+              imageUrl: announcement['imageUrl'] ?? announcement['image'] ?? announcement['heroImageUrl'],
               type: 'announcement',
               date: announcement['date'] != null ? DateTime.tryParse(announcement['date']) : null,
             ));
@@ -62,9 +60,9 @@ class SearchService extends ISearchService {
             results.add(SearchModel(
               id: project['id'],
               title: project['title'],
-              content: project['content'],
               description: project['description'],
-              imageUrl: project['imageUrl'],
+              content: project['content'],
+              imageUrl: project['imageUrl'] ?? project['image'] ?? project['heroImageUrl'],
               type: 'project',
             ));
           }
@@ -76,9 +74,8 @@ class SearchService extends ISearchService {
             results.add(SearchModel(
               id: service['id'],
               title: service['title'],
-              content: service['content'],
               description: service['description'],
-              imageUrl: service['imageUrl'],
+              imageUrl: service['imageUrl'] ?? service['image'] ?? service['heroImageUrl'],
               iconUrl: service['iconUrl'],
               type: 'city_service',
             ));
@@ -91,9 +88,9 @@ class SearchService extends ISearchService {
             results.add(SearchModel(
               id: event['id'],
               title: event['title'],
-              content: event['content'],
               description: event['description'],
-              imageUrl: event['imageUrl'],
+              content: event['content'],
+              imageUrl: event['imageUrl'] ?? event['image'] ?? event['heroImageUrl'],
               type: 'event',
               date: event['date'] != null ? DateTime.tryParse(event['date']) : null,
             ));
