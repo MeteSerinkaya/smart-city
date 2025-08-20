@@ -27,8 +27,8 @@ class SearchService extends ISearchService {
  
     // Relative path ise base URL ile birleştir
     final baseUrl = AppConstants.baseUrl;
-    // Base URL'in sonunda / varsa kaldır, relative path'in başında / varsa kaldır
-    final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    // Base URL'in sonunda /api/ varsa kaldır, sadece domain kalsın
+    final cleanBaseUrl = baseUrl.replaceAll('/api/', '');
     final cleanImagePath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
     final fullUrl = '$cleanBaseUrl/$cleanImagePath';
     
