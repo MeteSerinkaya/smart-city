@@ -33,8 +33,8 @@ class SearchService extends ISearchService {
     // Kategoriye göre path belirle
     String finalPath;
     if (category == 'news') {
-      // Haberler için /upload/ path'i kullan
-      finalPath = 'upload/$imagePath';
+      // Haberler için direkt path kullan (zaten /upload/ ile geliyor)
+      finalPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
     } else if (category == 'project') {
       // Projeler için /upload/ path'i kullan
       finalPath = 'upload/$imagePath';
