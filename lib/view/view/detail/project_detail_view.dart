@@ -4,9 +4,15 @@ import 'package:provider/provider.dart';
 import 'package:smart_city/view/viewmodel/project/project_view_model.dart';
 import 'package:smart_city/view/authentication/test/model/project/project_model.dart';
 import 'package:smart_city/core/components/app_bar/main_app_bar.dart';
+import 'package:smart_city/core/components/cards/hover_card.dart';
+import 'package:go_router/go_router.dart';
+import 'package:smart_city/core/components/detail/hero_detail_scaffold.dart';
+import 'package:flutter/services.dart';
+
 
 class ProjectDetailView extends StatefulWidget {
-  const ProjectDetailView({super.key});
+  final int? projectId;
+  const ProjectDetailView({super.key, this.projectId});
 
   @override
   State<ProjectDetailView> createState() => _ProjectDetailViewState();
@@ -18,6 +24,10 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  // Search için state
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -52,6 +62,7 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -60,13 +71,28 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
     super.didChangeDependencies();
     if (!_initialized) {
       final viewModel = Provider.of<ProjectViewModel>(context, listen: false);
-      viewModel.fetchProjects();
+      if (widget.projectId != null) {
+        viewModel.getProjectById(widget.projectId!);
+      } else {
+        viewModel.fetchProjects();
+      }
       _initialized = true;
       
       // Animasyonları başlat
       _fadeController.forward();
       _slideController.forward();
     }
+  }
+
+  // Arama fonksiyonu
+  List<ProjectModel> _filterProjects(List<ProjectModel> projects) {
+    if (_searchQuery.isEmpty) return projects;
+
+    return projects.where((project) {
+      final query = _searchQuery.toLowerCase();
+      return project.title?.toLowerCase().contains(query) == true ||
+          project.description?.toLowerCase().contains(query) == true;
+    }).toList();
   }
 
   @override
@@ -76,6 +102,9 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
       appBar: const MainAppBar(
         isTransparent: false,
         onNavTap: null,
+        activeItemOverride: 'Projeler',
+        showOnlyActiveItem: true,
+        showBackButton: true,
       ),
       body: Observer(
         builder: (context) {
@@ -85,11 +114,20 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
             return _buildLoadingState();
           }
 
+          if (widget.projectId != null) {
+            if (viewModel.singleProject == null) {
+              return _buildProjectNotFoundState();
+            }
+            return _buildSingleProjectView(viewModel.singleProject!);
+          }
+
           if (viewModel.projectList == null || viewModel.projectList!.isEmpty) {
             return _buildEmptyState();
           }
 
-          return _buildProjectList(viewModel.projectList!);
+          final projects = _filterProjects(viewModel.projectList!);
+
+          return _buildProjectList(projects);
         },
       ),
     );
@@ -103,11 +141,11 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B).withOpacity(0.1),
+              color: const Color(0xFF06B6D4).withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF06B6D4)),
               strokeWidth: 3,
             ),
           ),
@@ -116,11 +154,7 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
             opacity: _fadeAnimation,
             child: const Text(
               'Projeler yükleniyor...',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF374151),
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Color(0xFF374151)),
             ),
           ),
         ],
@@ -138,38 +172,27 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
             Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withOpacity(0.1),
+                color: const Color(0xFF06B6D4).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFF59E0B).withOpacity(0.2),
+                    color: const Color(0xFF06B6D4).withOpacity(0.2),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.work_outline,
-                size: 64,
-                color: Color(0xFFF59E0B),
-              ),
+              child: const Icon(Icons.work_outline, size: 64, color: Color(0xFF06B6D4)),
             ),
             const SizedBox(height: 24),
             const Text(
               'Henüz proje bulunmuyor',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1F2937),
-              ),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF1F2937)),
             ),
             const SizedBox(height: 12),
             const Text(
               'Yeni projeler eklendiğinde burada görünecek',
-              style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF6B7280),
-              ),
+              style: TextStyle(fontSize: 16, color: Color(0xFF6B7280)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -193,29 +216,30 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Projeler',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1F2937),
-                      ),
+                      'Tüm Projeler',
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Color(0xFF1F2937)),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '${projects.length} proje bulundu',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Color(0xFF6B7280),
-                      ),
+                      style: const TextStyle(fontSize: 16, color: Color(0xFF6B7280)),
                     ),
                     const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
+            // Search Bar
+            SliverToBoxAdapter(child: _buildSearchBar()),
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              sliver: SliverList(
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 1.2,
+                  crossAxisSpacing: 24,
+                  mainAxisSpacing: 24,
+                ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final project = projects[index];
@@ -232,6 +256,41 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(32, 0, 32, 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Proje ara...',
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildProjectCard(ProjectModel project, int index) {
     return TweenAnimationBuilder<double>(
       duration: Duration(milliseconds: 600 + (index * 100)),
@@ -241,190 +300,145 @@ class _ProjectDetailViewState extends State<ProjectDetailView> with TickerProvid
           offset: Offset(0, 50 * (1 - value)),
           child: Opacity(
             opacity: value,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 20),
+            child: HoverCard(
+              imageUrl: project.imageUrl,
+              title: project.title ?? 'Başlık Yok',
+              description: project.description ?? 'Açıklama yok',
+              date: null,
+              location: null,
+              cardType: CardType.project,
+              statusText: 'PROJE',
+              statusColor: const Color(0xFF06B6D4),
+              statusIcon: Icons.engineering,
+              onTap: () => context.go('/projects/${project.id ?? ''}'),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProjectNotFoundState() {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                color: const Color(0xFF06B6D4).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: const Color(0xFF06B6D4).withOpacity(0.2),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (project.imageUrl != null && project.imageUrl!.isNotEmpty)
-                    Hero(
-                      tag: 'project_image_${project.id}',
-                      child: Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                          image: DecorationImage(
-                            image: NetworkImage(project.imageUrl!),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.3),
-                              ],
-                            ),
-                          ),
-                        ),
+              child: const Icon(Icons.work_outline, size: 64, color: Color(0xFF06B6D4)),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Proje bulunamadı',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Color(0xFF1F2937)),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Aradığınız proje mevcut değil veya kaldırılmış olabilir.',
+              style: TextStyle(fontSize: 16, color: Color(0xFF6B7280)),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSingleProjectView(ProjectModel project) {
+    final String? resolvedImage = (project.imageUrl != null && project.imageUrl!.isNotEmpty)
+        ? _buildFullImageUrl(project.imageUrl!)
+        : null;
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: HeroDetailScaffold(
+          title: project.title ?? 'Başlık Yok',
+          imageUrl: resolvedImage,
+          location: 'Erzurum',
+          description: project.description,
+          heroTag: 'project_${project.id ?? project.title ?? ''}',
+          bottomActions: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
+              ),
+              child: InkWell(
+                onTap: () {
+                  final url = Uri.base.toString();
+                  Clipboard.setData(ClipboardData(text: url));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Bağlantı kopyalandı')),
+                  );
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.share_outlined, size: 16, color: const Color(0xFF666666)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Paylaş',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF666666),
                       ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF59E0B).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'PROJE',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFFF59E0B),
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3F4F6),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.engineering,
-                                    size: 14,
-                                    color: Color(0xFF6B7280),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Text(
-                                    'Devam Ediyor',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xFF6B7280),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          project.title ?? 'Başlıksız Proje',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1F2937),
-                            height: 1.3,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          project.description ?? 'Açıklama bulunmuyor',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF374151),
-                            height: 1.6,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF59E0B),
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.visibility,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Projeyi İncele',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3F4F6),
-                                borderRadius: BorderRadius.circular(25),
-                                border: Border.all(
-                                  color: const Color(0xFFE5E7EB),
-                                  width: 1,
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    size: 16,
-                                    color: Color(0xFF6B7280),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Detaylar',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF6B7280),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _buildFullImageUrl(String imageUrl) {
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    if (imageUrl.startsWith('/')) {
+      return 'https://localhost:7276$imageUrl';
+    }
+    return 'https://localhost:7276/upload/$imageUrl';
+  }
+
+  Widget _infoChip(IconData icon, String text, {Color? bg, Color? fg}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg ?? const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 16, color: fg ?? const Color(0xFF374151)),
+        const SizedBox(width: 8),
+        Text(text,
+            style: TextStyle(
+              color: fg ?? const Color(0xFF374151),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            )),
+      ]),
     );
   }
 } 

@@ -38,9 +38,33 @@ class _SearchDialogState extends State<SearchDialog> {
 
   void _onSearchChanged() {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      widget.searchViewModel.search(_searchController.text);
+    _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
+      final searchText = _searchController.text.trim();
+      if (searchText.isNotEmpty) {
+        // Arama metnini normalize et (büyük/küçük harf ve noktalama işareti önemsiz)
+        final normalizedSearch = _normalizeSearchText(searchText);
+        widget.searchViewModel.search(normalizedSearch);
+      } else {
+        widget.searchViewModel.clearSearch();
+      }
     });
+  }
+
+  String _normalizeSearchText(String text) {
+    // Türkçe karakterleri normalize et
+    return text
+        .toLowerCase()
+        .replaceAll('ç', 'c')
+        .replaceAll('ğ', 'g')
+        .replaceAll('ı', 'i')
+        .replaceAll('ö', 'o')
+        .replaceAll('ş', 's')
+        .replaceAll('ü', 'u')
+        // Noktalama işaretlerini kaldır
+        .replaceAll(RegExp(r'[^\w\s]'), '')
+        // Fazla boşlukları tek boşluğa çevir
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   @override
@@ -51,39 +75,121 @@ class _SearchDialogState extends State<SearchDialog> {
         width: MediaQuery.of(context).size.width * 0.9,
         height: MediaQuery.of(context).size.height * 0.8,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+              spreadRadius: 0,
+            ),
+            BoxShadow(
+              color: Colors.white.withOpacity(0.6),
+              blurRadius: 8,
+              offset: const Offset(0, -4),
+              spreadRadius: 0,
+            ),
+          ],
         ),
         child: Column(
           children: [
-            // Header
+            // Header with Neumorphic Search Bar
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                color: const Color(0xFFF5F5F5),
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
               ),
               child: Row(
                 children: [
-                  IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.of(context).pop()),
+                  // Back Button with Neumorphic effect
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(1, 1)),
+                        BoxShadow(color: Colors.white.withOpacity(0.5), blurRadius: 4, offset: const Offset(-1, -1)),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Color(0xFF666666)),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Neumorphic Search Bar
                   Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: 'Şehir hizmetleri, projeler, duyurular, haberler ara...',
-                        border: InputBorder.none,
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  widget.searchViewModel.clearSearch();
-                                },
-                              )
-                            : null,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(2, 2)),
+                          BoxShadow(color: Colors.white.withOpacity(0.6), blurRadius: 6, offset: const Offset(-2, -2)),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        textInputAction: TextInputAction.search,
+                        keyboardType: TextInputType.text,
+                        enableSuggestions: false,
+                        autocorrect: false,
+                        enableIMEPersonalizedLearning: false,
+                        smartDashesType: SmartDashesType.disabled,
+                        smartQuotesType: SmartQuotesType.disabled,
+                        style: const TextStyle(fontSize: 16, color: Color(0xFF333333), fontWeight: FontWeight.w500),
+                        decoration: InputDecoration(
+                          hintText: 'Şehir hizmetleri, projeler, duyurular, haberler ara...',
+                          hintStyle: const TextStyle(
+                            color: Color(0xFF999999),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          prefixIcon: Container(
+                            margin: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8E8E8),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(1, 1),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.search, color: Color(0xFF666666), size: 20),
+                          ),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? Container(
+                                  margin: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8E8E8),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 4,
+                                        offset: const Offset(1, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(Icons.clear, size: 18),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      widget.searchViewModel.clearSearch();
+                                    },
+                                  ),
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        ),
                       ),
                     ),
                   ),
@@ -98,10 +204,12 @@ class _SearchDialogState extends State<SearchDialog> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
+                  // Eğer arama yapılmamışsa kategorileri göster
                   if (!widget.searchViewModel.isSearchActive) {
-                    return _buildSearchSuggestions();
+                    return _buildCategories();
                   }
 
+                  // Eğer arama yapılmışsa sonuçları göster
                   if (!widget.searchViewModel.hasResults) {
                     return _buildNoResults();
                   }
@@ -116,77 +224,9 @@ class _SearchDialogState extends State<SearchDialog> {
     );
   }
 
-  Widget _buildSearchSuggestions() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Ne arıyorsunuz?',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              children: [
-                _buildSuggestionCard('Haberler', 'Güncel haberleri ara', Icons.article, const Color(0xFF10B981)),
-                _buildSuggestionCard('Duyurular', 'Önemli duyuruları ara', Icons.campaign, const Color(0xFF0A4A9D)),
-                _buildSuggestionCard('Projeler', 'Şehir projelerini ara', Icons.work_outline, const Color(0xFFF59E0B)),
-                _buildSuggestionCard(
-                  'Şehir Hizmetleri',
-                  'Akıllı şehir hizmetlerini ara',
-                  Icons.apps,
-                  const Color(0xFF8B5CF6),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuggestionCard(String title, String subtitle, IconData icon, Color color) {
-    return Card(
-      elevation: 2,
-      child: InkWell(
-        onTap: () {
-          _searchController.text = title;
-          widget.searchViewModel.search(title);
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Icon(icon, color: color, size: 32),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
+  Widget _buildCategories() {
+    return const SingleChildScrollView(
+      child: Padding(padding: EdgeInsets.all(20), child: _CategoriesContent()),
     );
   }
 
@@ -347,5 +387,276 @@ class _SearchDialogState extends State<SearchDialog> {
         context.go('/city-services-detail');
         break;
     }
+  }
+}
+
+class _CategoriesContent extends StatelessWidget {
+  const _CategoriesContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(1, 1)),
+              BoxShadow(color: Colors.white.withOpacity(0.4), blurRadius: 4, offset: const Offset(-1, -1)),
+            ],
+          ),
+          child: const Text(
+            'Ne arıyorsunuz?',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
+          ),
+        ),
+        const SizedBox(height: 20),
+        // İlk satır - Duyurular ve Haberler
+        SizedBox(
+          height: 125,
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _CategoryIconCard(
+                    icon: Icons.campaign,
+                    label: 'Duyurular',
+                    subtitle: 'Önemli duyuruları ara',
+                    color: Color(0xFF0A4A9D),
+                    onTap: () => context.go('/announcements-detail'),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: _CategoryIconCard(
+                    icon: Icons.article,
+                    label: 'Haberler',
+                    subtitle: 'Güncel haberleri ara',
+                    color: Color(0xFF10B981),
+                    onTap: () => context.go('/news-detail'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        // İkinci satır - Etkinlikler ve Şehir Hizmetleri
+        SizedBox(
+          height: 125,
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _CategoryIconCard(
+                    icon: Icons.event,
+                    label: 'Etkinlikler',
+                    subtitle: 'Yaklaşan etkinlikleri ara',
+                    color: Color(0xFFF59E0B),
+                    onTap: () => context.go('/events-detail'),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: _CategoryIconCard(
+                    icon: Icons.location_city,
+                    label: 'Şehir Hizmetleri',
+                    subtitle: 'Şehir hizmetlerini ara',
+                    color: Color(0xFF8B5CF6),
+                    onTap: () => context.go('/city-services-detail'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Üçüncü satır - Projeler (ortalanmış)
+        SizedBox(
+          height: 125,
+          child: Row(
+            children: [
+              const Spacer(flex: 1),
+              Expanded(
+                flex: 2,
+                child: _CategoryIconCard(
+                  icon: Icons.construction,
+                  label: 'Projeler',
+                  subtitle: 'Şehir projelerini ara',
+                  color: Color(0xFFEF4444),
+                  onTap: () => context.go('/projects-detail'),
+                ),
+              ),
+              const Spacer(flex: 1),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryIconCard extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _CategoryIconCard({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_CategoryIconCard> createState() => _CategoryIconCardState();
+}
+
+class _CategoryIconCardState extends State<_CategoryIconCard> with SingleTickerProviderStateMixin {
+  bool isHovered = false;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _translateAnimation;
+  late Animation<double> _shadowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(duration: const Duration(milliseconds: 200), vsync: this);
+
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.02,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
+
+    _translateAnimation = Tween<double>(
+      begin: 0.0,
+      end: -2.0,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
+
+    _shadowAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _onHoverChanged(bool hovered) {
+    if (hovered != isHovered) {
+      setState(() => isHovered = hovered);
+      if (hovered) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => _onHoverChanged(true),
+      onExit: (_) => _onHoverChanged(false),
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(20),
+        highlightColor: widget.color.withOpacity(0.1),
+        splashColor: widget.color.withOpacity(0.2),
+        child: AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return Transform(
+              transform: Matrix4.identity()
+                ..translate(0.0, _translateAnimation.value)
+                ..scale(_scaleAnimation.value),
+              child: Container(
+                height: 110,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isHovered ? widget.color.withOpacity(0.3) : const Color(0xFFE0E0E0),
+                    width: isHovered ? 2 : 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.color.withOpacity(0.08 + (_shadowAnimation.value * 0.07)),
+                      blurRadius: 12 + (_shadowAnimation.value * 8),
+                      offset: Offset(0, 4 + (_shadowAnimation.value * 4)),
+                      spreadRadius: _shadowAnimation.value * 2,
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: widget.color,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: widget.color.withOpacity(0.3 + (_shadowAnimation.value * 0.3)),
+                              blurRadius: 8 + (_shadowAnimation.value * 8),
+                              offset: Offset(0, 4 + (_shadowAnimation.value * 4)),
+                            ),
+                          ],
+                        ),
+                        child: Icon(widget.icon, color: Colors.white, size: 20 + (_shadowAnimation.value * 2)),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.label,
+                        style: TextStyle(
+                          fontSize: 14 + (_shadowAnimation.value * 1),
+                          fontWeight: FontWeight.w700,
+                          color: widget.color,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.subtitle,
+                        style: TextStyle(
+                          fontSize: 10 + (_shadowAnimation.value * 1),
+                          color: const Color(0xFF666666),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }

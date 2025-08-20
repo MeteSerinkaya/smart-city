@@ -18,6 +18,9 @@ abstract class _AnnouncementViewModelBase with Store {
   List<AnnouncementModel>? announcementList;
 
   @observable
+  AnnouncementModel? singleAnnouncement;
+
+  @observable
   String? errorMessage;
 
   @observable
@@ -31,8 +34,7 @@ abstract class _AnnouncementViewModelBase with Store {
     
     try {
       final announcements = await _announcementRepository.getAnnouncement();
-      print("DEBUG announcements: $announcements");
-      // Hemen boş state'e geç, hiç bekleme yok
+      
       if (announcements != null && announcements.isNotEmpty) {
         announcementList = announcements;
       } else {
@@ -53,6 +55,33 @@ abstract class _AnnouncementViewModelBase with Store {
   @action
   Future<void> retryFetchAnnouncement() async {
     await fetchAnnouncement();
+  }
+
+  @action
+  Future<void> getAnnouncementById(int id) async {
+    isLoading = true;
+    hasError = false;
+    errorMessage = null;
+    singleAnnouncement = null;
+    
+    try {
+      // Önce tüm duyuruları al
+      await fetchAnnouncement();
+      
+      // Sonra istenen ID'ye sahip duyuruyu bul
+      if (announcementList != null && announcementList!.isNotEmpty) {
+        final announcement = announcementList!.firstWhere(
+          (a) => a.id == id,
+          orElse: () => announcementList!.first,
+        );
+        singleAnnouncement = announcement;
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = 'Duyuru yüklenirken bir hata oluştu';
+    } finally {
+      isLoading = false;
+    }
   }
 
   @action

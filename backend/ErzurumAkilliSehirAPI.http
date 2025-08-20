@@ -1,6 +1,0 @@
-@ErzurumAkilliSehirAPI_HostAddress = http://localhost:5280
-
-GET {{ErzurumAkilliSehirAPI_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

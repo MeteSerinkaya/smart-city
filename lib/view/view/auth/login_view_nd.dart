@@ -66,6 +66,130 @@ class _ModernFadeInWidgetState extends State<ModernFadeInWidget> with SingleTick
   }
 }
 
+// Arkaplan resmi için önbellek yöneticisi
+class BackgroundImageCache {
+  static ImageProvider? _cachedBackgroundImage;
+  static bool _isImageLoaded = false;
+  static final Map<String, ImageProvider> _imageCache = {};
+  
+  static ImageProvider getBackgroundImage() {
+    const imagePath = 'asset/image/arkaplan21.jpg';
+    
+    if (_cachedBackgroundImage == null) {
+      _cachedBackgroundImage = AssetImage(imagePath);
+      // Resmi önbelleğe ekle
+      _imageCache[imagePath] = _cachedBackgroundImage!;
+    }
+    
+    return _cachedBackgroundImage!;
+  }
+  
+  static bool get isImageLoaded => _isImageLoaded;
+  
+  static void setImageLoaded(bool loaded) {
+    _isImageLoaded = loaded;
+  }
+  
+  // Resmi tamamen önbelleğe al
+  static Future<void> preloadImage(BuildContext context) async {
+    const imagePath = 'asset/image/arkaplan21.jpg';
+    
+    if (!_imageCache.containsKey(imagePath)) {
+      final imageProvider = AssetImage(imagePath);
+      _imageCache[imagePath] = imageProvider;
+      
+      // Resmi önceden yükle
+      await precacheImage(imageProvider, context);
+      _isImageLoaded = true;
+    }
+  }
+}
+
+extension _LoginViewNdHelpers on _LoginViewNdState {
+  // Submit with validation
+  Future<void> _onSubmit(AuthViewModel viewModel) async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lütfen zorunlu alanları doldurun')));
+      return;
+    }
+
+    final success = await viewModel.login(usernameController.text.trim(), passwordController.text);
+
+    if (success) {
+      if (mounted) context.go('/admin');
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(viewModel.errorMessage ?? 'Giriş başarısız'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    }
+  }
+
+  // Custom field builder with consistent modern styling
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    String? Function(String?)? validator,
+    void Function(String)? onSubmitted,
+    TextInputAction textInputAction = TextInputAction.done,
+    bool isPassword = false,
+    FocusNode? focusNode,
+  }) {
+    final baseBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: const Color(0xFF1E3A8A).withOpacity(0.2), width: 2),
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF1E3A8A).withOpacity(0.2), width: 2),
+      ),
+      child: TextFormField(
+        controller: controller,
+        focusNode: focusNode,
+        obscureText: isPassword ? _obscurePassword : false,
+        autocorrect: !isPassword,
+        enableSuggestions: !isPassword,
+        textInputAction: textInputAction,
+        onFieldSubmitted: onSubmitted,
+        validator: validator,
+        autofillHints: isPassword ? const [AutofillHints.password] : const [AutofillHints.username],
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          suffixIcon: isPassword
+              ? IconButton(
+                  tooltip: _obscurePassword ? 'Şifreyi göster' : 'Şifreyi gizle',
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    color: const Color(0xFF6B7280),
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  splashRadius: 20,
+                )
+              : null,
+          border: baseBorder,
+          enabledBorder: baseBorder,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
+}
+
 // --- MODERN HOVER WIDGET ---
 class ModernHoverWidget extends StatefulWidget {
   final Widget child;
@@ -205,6 +329,10 @@ class LoginViewNd extends StatefulWidget {
 class _LoginViewNdState extends State<LoginViewNd> with TickerProviderStateMixin {
   late final TextEditingController usernameController;
   late final TextEditingController passwordController;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final FocusNode _passwordFocusNode = FocusNode();
+  bool _obscurePassword = true;
+  bool _rememberMe = false;
   late AnimationController _formController;
   late Animation<double> _formAnimation;
 
@@ -230,9 +358,29 @@ class _LoginViewNdState extends State<LoginViewNd> with TickerProviderStateMixin
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Arkaplan resmini önceden yükle ve önbelleğe al
+    _preloadBackgroundImage();
+  }
+
+  // Arkaplan resmini önceden yükleme metodu
+  void _preloadBackgroundImage() {
+    // Yeni cache sistemi ile resmi önceden yükle
+    BackgroundImageCache.preloadImage(context).then((_) {
+      if (mounted) {
+        setState(() {
+          // Resim yüklendi, artık kullanılabilir
+        });
+      }
+    });
+  }
+
+  @override
   void dispose() {
     usernameController.dispose();
     passwordController.dispose();
+    _passwordFocusNode.dispose();
     _formController.dispose();
     super.dispose();
   }
@@ -244,280 +392,340 @@ class _LoginViewNdState extends State<LoginViewNd> with TickerProviderStateMixin
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
+          image: DecorationImage(
+            image: BackgroundImageCache.getBackgroundImage(),
+            fit: BoxFit.cover,
+            repeat: ImageRepeat.noRepeat,
+            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken),
+          ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF1E3A8A),
-              const Color(0xFF3B82F6),
-              const Color(0xFF60A5FA),
-              const Color(0xFF93C5FD),
+              const Color(0xFF0F172A).withOpacity(0.8),
+              const Color(0xFF1E293B).withOpacity(0.7),
+              const Color(0xFF334155).withOpacity(0.6),
+              const Color(0xFF475569).withOpacity(0.5),
             ],
-            stops: [0.0, 0.3, 0.7, 1.0],
+            stops: [0.0, 0.25, 0.7, 1.0],
           ),
         ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo and title with animations
-                  ModernFadeInWidget(
-                    delay: const Duration(milliseconds: 200),
-                    beginOffset: 50.0,
-                    child: ModernHoverWidget(
-                      scale: 1.05,
-                      glowColor: Colors.white,
-                      child: Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.white.withOpacity(0.2), Colors.white.withOpacity(0.1)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
-                        ),
-                        child: Stack(
-                          children: [
-                            const Icon(Icons.admin_panel_settings, size: 80, color: Colors.white),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: PulsingDotWidget(color: Colors.white, size: 8.0),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+        child: Stack(
+          children: [
+            // Animated background elements
+            Positioned(
+              top: -100,
+              right: -100,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [const Color(0xFF3B82F6).withOpacity(0.1), Colors.transparent]),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -150,
+              left: -100,
+              child: Container(
+                width: 350,
+                height: 350,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [const Color(0xFF8B5CF6).withOpacity(0.08), Colors.transparent]),
+                ),
+              ),
+            ),
+            // Glass morphism overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.white.withOpacity(0.02), Colors.transparent, Colors.black.withOpacity(0.05)],
                   ),
-                  const SizedBox(height: 32),
-
-                  // Title with gradient text
-                  ModernFadeInWidget(
-                    delay: const Duration(milliseconds: 400),
-                    beginOffset: 30.0,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        colors: [Colors.white, Colors.white.withOpacity(0.9)],
-                      ).createShader(bounds),
-                      child: Text(
-                        'Admin Paneli',
-                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 36,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  ModernFadeInWidget(
-                    delay: const Duration(milliseconds: 600),
-                    beginOffset: 20.0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                      ),
-                      child: Text(
-                        'Yönetici hesabınıza giriş yapın',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Login Form with animations
-                  FadeTransition(
-                    opacity: _formAnimation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.3),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(parent: _formController, curve: Curves.easeOutCubic)),
-                      child: ModernFloatingCard(
-                        elevation: 20.0,
-                        child: Observer(
-                          builder: (_) => Column(
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 820),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Logo images side by side
+                        ModernFadeInWidget(
+                          delay: const Duration(milliseconds: 200),
+                          beginOffset: 50.0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Form header with gradient
-                              ShaderMask(
-                                shaderCallback: (bounds) => LinearGradient(
-                                  colors: [const Color(0xFF1E3A8A), const Color(0xFF3B82F6)],
-                                ).createShader(bounds),
-                                child: Text(
-                                  'Yönetici Girişi',
-                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                  ),
+                              // First image
+                              Container(
+                                margin: const EdgeInsets.only(right: 20),
+                                child: Image.asset(
+                                  'asset/image/images.png',
+                                  height: 120,
+                                  width: 120,
+                                  fit: BoxFit.contain,
                                 ),
                               ),
-                              const SizedBox(height: 32),
-
-                              // Username Field with enhanced styling
-                              ModernHoverWidget(
-                                scale: 1.02,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: const Color(0xFF1E3A8A).withOpacity(0.2),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: CommonWidgets.textField(
-                                    controller: usernameController,
-                                    label: 'Kullanıcı Adı',
-                                    hint: 'admin',
-                                    prefixIcon: Icons.person,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-
-                              // Password Field with enhanced styling
-                              ModernHoverWidget(
-                                scale: 1.02,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: const Color(0xFF1E3A8A).withOpacity(0.2),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: CommonWidgets.textField(
-                                    controller: passwordController,
-                                    label: 'Şifre',
-                                    hint: '••••••••',
-                                    isPassword: true,
-                                    prefixIcon: Icons.lock,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 32),
-
-                              // Login Button with enhanced styling
-                              ModernHoverWidget(
-                                scale: 1.05,
-                                glowColor: const Color(0xFF1E3A8A),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF1E3A8A).withOpacity(0.3),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 6),
-                                      ),
-                                    ],
-                                  ),
-                                  child: CommonWidgets.primaryButton(
-                                    text: 'Giriş Yap',
-                                    isLoading: viewModel.isLoading,
-                                    onPressed: () async {
-                                      print('DEBUG: Login attempt started');
-                                      final success = await viewModel.login(
-                                        usernameController.text,
-                                        passwordController.text,
-                                      );
-
-                                      print('DEBUG: Login result: $success');
-                                      print('DEBUG: Error message: ${viewModel.errorMessage}');
-
-                                      if (success) {
-                                        // ✅ Admin girişi başarılı - Admin paneline yönlendir
-                                        print('DEBUG: Redirecting to /admin');
-                                        if (mounted) {
-                                          context.go('/admin');
-                                        }
-                                      } else {
-                                        print('DEBUG: Login failed, showing error');
-                                        if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(viewModel.errorMessage ?? 'Giriş başarısız'),
-                                              backgroundColor: Colors.red,
-                                              behavior: SnackBarBehavior.floating,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Back to Home Button with enhanced styling
-                              ModernHoverWidget(
-                                scale: 1.03,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: const Color(0xFF1E3A8A).withOpacity(0.3),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: CommonWidgets.secondaryButton(
-                                    text: 'Ana Sayfaya Dön',
-                                    onPressed: () {
-                                      context.go('/home');
-                                    },
-                                  ),
+                              // Second image
+                              Container(
+                                margin: const EdgeInsets.only(left: 20),
+                                child: Image.asset(
+                                  'asset/image/akillisehir.png',
+                                  height: 120,
+                                  width: 120,
+                                  fit: BoxFit.contain,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
+                        const SizedBox(height: 32),
 
-                  // Footer with animation
-                  ModernFadeInWidget(
-                    delay: const Duration(milliseconds: 1000),
-                    beginOffset: 20.0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                      ),
-                      child: Text(
-                        '© 2024 Erzurum Akıllı Şehir. Tüm hakları saklıdır.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                          fontWeight: FontWeight.w500,
+                        // Title with gradient text
+                        ModernFadeInWidget(
+                          delay: const Duration(milliseconds: 400),
+                          beginOffset: 30.0,
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => LinearGradient(
+                              colors: [Colors.white, Colors.white.withOpacity(0.9)],
+                            ).createShader(bounds),
+                            child: Text(
+                              'Kurumsal Giriş',
+                              style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 36,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
+                        const SizedBox(height: 48),
+
+                        // Login Form with animations
+                        FadeTransition(
+                          opacity: _formAnimation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.3),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(parent: _formController, curve: Curves.easeOutCubic)),
+                            child: Container(
+                              padding: const EdgeInsets.all(28),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [Colors.white.withOpacity(0.95), Colors.white.withOpacity(0.9)],
+                                ),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                    spreadRadius: 0,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 40,
+                                    offset: const Offset(0, 20),
+                                    spreadRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: Observer(
+                                builder: (_) => Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    children: [
+                                      // Form header with enhanced styling
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        child: Column(
+                                          children: [
+                                            ShaderMask(
+                                              shaderCallback: (bounds) => LinearGradient(
+                                                colors: [
+                                                  const Color(0xFF0F172A),
+                                                  const Color(0xFF1E293B),
+                                                  const Color(0xFF3B82F6),
+                                                ],
+                                              ).createShader(bounds),
+                                              child: Text(
+                                                'Yönetici Girişi',
+                                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Colors.white,
+                                                  fontSize: 32,
+                                                  letterSpacing: -0.5,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Container(
+                                              height: 3,
+                                              width: 60,
+                                              decoration: BoxDecoration(
+                                                gradient: const LinearGradient(
+                                                  colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+                                                ),
+                                                borderRadius: BorderRadius.circular(2),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 32),
+
+                                      // Username Field with validation
+                                      ModernHoverWidget(
+                                        scale: 1.02,
+                                        child: _buildTextField(
+                                          controller: usernameController,
+                                          label: 'Kullanıcı Adı',
+                                          hint: 'admin',
+                                          textInputAction: TextInputAction.next,
+                                          validator: (v) =>
+                                              (v == null || v.trim().isEmpty) ? 'Kullanıcı adı zorunlu' : null,
+                                          onSubmitted: (_) => _passwordFocusNode.requestFocus(),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+
+                                      // Password Field with toggle and validation
+                                      ModernHoverWidget(
+                                        scale: 1.02,
+                                        child: _buildTextField(
+                                          controller: passwordController,
+                                          label: 'Şifre',
+                                          hint: '••••••••',
+                                          isPassword: true,
+                                          focusNode: _passwordFocusNode,
+                                          textInputAction: TextInputAction.done,
+                                          validator: (v) => (v == null || v.isEmpty) ? 'Şifre zorunlu' : null,
+                                          onSubmitted: (_) => _onSubmit(viewModel),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 32),
+
+                                      // Remember me + forgot password
+                                      Row(
+                                        children: [
+                                          Transform.translate(
+                                            offset: const Offset(-8, 0),
+                                            child: Checkbox(
+                                              value: _rememberMe,
+                                              onChanged: (v) => setState(() => _rememberMe = v ?? false),
+                                              activeColor: const Color(0xFF1E3A8A),
+                                            ),
+                                          ),
+                                          const Text('Beni hatırla'),
+                                          const Spacer(),
+                                          TextButton(
+                                            onPressed: () {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(const SnackBar(content: Text('Şifre sıfırlama yakında')));
+                                            },
+                                            child: const Text('Şifremi unuttum?'),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // Login Button with enhanced styling
+                                      ModernHoverWidget(
+                                        scale: 1.05,
+                                        glowColor: const Color(0xFF1E3A8A),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(16),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xFF1E3A8A).withOpacity(0.3),
+                                                blurRadius: 12,
+                                                offset: const Offset(0, 6),
+                                              ),
+                                            ],
+                                          ),
+                                          child: CommonWidgets.primaryButton(
+                                            text: 'Giriş Yap',
+                                            isLoading: viewModel.isLoading,
+                                            onPressed: () => _onSubmit(viewModel),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+
+                                      // Back to Home Button with enhanced styling
+                                      ModernHoverWidget(
+                                        scale: 1.03,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(
+                                              color: const Color(0xFF1E3A8A).withOpacity(0.3),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: CommonWidgets.secondaryButton(
+                                            text: 'Ana Sayfaya Dön',
+                                            onPressed: () {
+                                              context.go('/home');
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+
+                        // Footer with animation
+                        ModernFadeInWidget(
+                          delay: const Duration(milliseconds: 1000),
+                          beginOffset: 20.0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+                            ),
+                            child: Text(
+                              '© 2025 Erzurum Akıllı Şehir. Tüm hakları saklıdır.',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withOpacity(0.8),
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

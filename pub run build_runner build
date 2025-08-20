@@ -1,0 +1,10 @@
+[33m11fed21[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Create separate widgets for announcements, news, and projects sections with full-width dark background
+[33m9049eaa[m Remove background colors from individual views to use parent container's dark background
+[33m6c84f91[m Add full-width dark background sections for announcements, news, and projects in home view
+[33mced5239[m Update sections to have full-width dark background like partners section
+[33mbd39bef[m Fix missing methods in news_view.dart - add _buildSeeAllSection and _buildFooterText
+[33m9b906a5[m Change background color to #2c2c2c for partners, announcements, news, and projects sections
+[33m52fa40c[m Update background colors to #2c2c2c for partners, announcements, news and projects sections
+[33m8864725[m Fix AppConstants.baseUrl compilation error
+[33mdbf7091[m Ultra fast loading - 1 second timeout, immediate empty state
+[33m94e900c[m Fix loading issues - show empty state immediately when API is down

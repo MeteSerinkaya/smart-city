@@ -3,6 +3,7 @@ import 'package:smart_city/core/init/network/network_manager.dart';
 
 abstract class IProjectService {
   Future<List<ProjectModel>?> fetchProjects();
+  Future<ProjectModel?> getProjectById(int id);
   Future<ProjectModel?> addProject(ProjectModel model);
   Future<ProjectModel?> updateProject(ProjectModel model);
   Future<bool> deleteProject(int id);
@@ -19,6 +20,20 @@ class ProjectService extends IProjectService {
       return null;
     } catch (e) {
       print("ProjectService fetchProjects error: $e");
+      return null;
+    }
+  }
+
+  @override
+  Future<ProjectModel?> getProjectById(int id) async {
+    try {
+      final response = await NetworkManager.instance.dioGet('projects/$id', ProjectModel());
+      if (response != null && response is ProjectModel) {
+        return response;
+      }
+      return null;
+    } catch (e) {
+      print("ProjectService getProjectById error: $e");
       return null;
     }
   }

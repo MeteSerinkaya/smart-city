@@ -11,10 +11,15 @@ import 'package:smart_city/view/viewmodel/news/news_view_model.dart';
 import 'package:smart_city/view/authentication/test/model/newsmodel/news_model.dart';
 import 'package:smart_city/view/authentication/test/model/project/project_model.dart';
 import 'package:smart_city/view/viewmodel/heroimage/hero_image_view_model.dart';
-import 'package:smart_city/core/components/app_bar/main_app_bar.dart';
-import 'package:smart_city/core/init/notifier/theme_notifier.dart';
+import 'package:go_router/go_router.dart';
 import 'package:smart_city/view/view/admin/hero_image_management.dart';
 import 'package:smart_city/view/viewmodel/project/project_view_model.dart';
+import 'package:smart_city/core/components/admin/admin_table_card.dart';
+import 'package:smart_city/view/viewmodel/admin_user/admin_user_view_model.dart';
+import 'package:smart_city/view/authentication/test/model/adminuser/admin_user_model.dart';
+import 'package:smart_city/view/authentication/test/model/adminuser/create_admin_user_model.dart';
+import 'package:smart_city/core/init/cache/locale_manager.dart';
+import 'package:smart_city/core/constants/enums/locale_keys_enum.dart';
 
 class AdminPanelView extends StatefulWidget {
   const AdminPanelView({super.key});
@@ -41,6 +46,9 @@ class _AdminPanelViewState extends State<AdminPanelView> {
     final cityServiceViewModel = Provider.of<CityServiceViewModel>(context, listen: false);
     final heroImageViewModel = Provider.of<HeroImageViewModel>(context, listen: false);
     final projectViewModel = Provider.of<ProjectViewModel>(context, listen: false);
+    final adminUserViewModel = Provider.of<AdminUserViewModel>(context, listen: false);
+
+    adminUserViewModel.fetchAdminUsers();
 
     announcementViewModel.fetchAnnouncement();
     eventViewModel.fetchEvents();
@@ -53,13 +61,136 @@ class _AdminPanelViewState extends State<AdminPanelView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const MainAppBar(),
-      body: Row(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [const Color(0xFFF8FAFC), const Color(0xFFF1F5F9), const Color(0xFFE2E8F0)],
+          ),
+        ),
+        child: Row(
+          children: [
+            // Sidebar
+            _buildSidebar(),
+            // Main Content
+            Expanded(
+              child: Column(
+                children: [
+                  // Custom Header with Logout
+                  _buildCustomHeader(context),
+                  // Main Content
+                  Expanded(child: _buildMainContent()),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomHeader(BuildContext context) {
+    return Container(
+      height: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white.withOpacity(0.95), Colors.white.withOpacity(0.85)],
+        ),
+        border: Border(bottom: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Sidebar
-          _buildSidebar(),
-          // Main Content
-          Expanded(child: _buildMainContent()),
+          // Admin Panel Title
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [const Color(0xFF3B82F6).withOpacity(0.2), const Color(0xFF3B82F6).withOpacity(0.1)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.admin_panel_settings, color: Color(0xFF3B82F6), size: 24),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Kurumsal Panel',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1E293B),
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
+          // Logout Button
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [const Color(0xFFEF4444).withOpacity(0.1), const Color(0xFFEF4444).withOpacity(0.05)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.3), width: 1),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Çıkış Yap'),
+                      content: const Text('Kurumsal panelden çıkmak istediğinize emin misiniz?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Vazgeç')),
+                        ElevatedButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+
+                            // Clear JWT token and admin status
+                            await LocaleManager.instance.setStringValue(PreferencesKeys.TOKEN, '');
+                            await LocaleManager.instance.setBoolValue(PreferencesKeys.IS_ADMIN, false);
+
+                            // Navigate to home page
+                            context.go('/home');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEF4444),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Çıkış Yap'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.logout, color: Color(0xFFEF4444), size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Çıkış Yap',
+                        style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -67,37 +198,76 @@ class _AdminPanelViewState extends State<AdminPanelView> {
 
   Widget _buildSidebar() {
     return Container(
-      width: 280,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Color(0x1A000000), blurRadius: 8, offset: Offset(2, 0))],
+      width: 300,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.white.withOpacity(0.95), Colors.white.withOpacity(0.9)],
+        ),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 30, offset: const Offset(0, 10), spreadRadius: 0),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 60,
+            offset: const Offset(0, 20),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Column(
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF1E3A8A), Color(0xFF3B82F6)],
+                colors: [const Color(0xFF0F172A), const Color(0xFF1E293B), const Color(0xFF334155)],
               ),
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(color: const Color(0xFF1E3A8A).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
+              ],
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: LinearGradient(colors: [Colors.white.withOpacity(0.25), Colors.white.withOpacity(0.15)]),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
                   ),
-                  child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 24),
+                  child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 28),
                 ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Admin Panel',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Kurumsal Panel',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Yönetim Merkezi',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -105,7 +275,7 @@ class _AdminPanelViewState extends State<AdminPanelView> {
           // Menu Items
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               children: [
                 _buildMenuItem(icon: Icons.dashboard, title: 'Dashboard', index: 0),
                 _buildMenuItem(icon: Icons.campaign, title: 'Duyurular', index: 1),
@@ -116,9 +286,6 @@ class _AdminPanelViewState extends State<AdminPanelView> {
                 _buildMenuItem(icon: Icons.image, title: 'Hero Resimler', index: 6),
                 _buildMenuItem(icon: Icons.people, title: 'Kullanıcılar', index: 7),
                 _buildMenuItem(icon: Icons.settings, title: 'Ayarlar', index: 8),
-                const Divider(height: 32),
-                _buildThemeToggle(),
-                _buildMenuItem(icon: Icons.logout, title: 'Çıkış', index: 6, isLogout: true),
               ],
             ),
           ),
@@ -129,85 +296,74 @@ class _AdminPanelViewState extends State<AdminPanelView> {
 
   Widget _buildMenuItem({required IconData icon, required String title, required int index, bool isLogout = false}) {
     final isSelected = _selectedIndex == index;
-    final color = isLogout ? const Color(0xFFEF4444) : const Color(0xFF6B7280);
+    final color = isLogout ? const Color(0xFFEF4444) : const Color(0xFF64748B);
     final selectedColor = isLogout ? const Color(0xFFEF4444) : const Color(0xFF3B82F6);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 6),
       child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           onTap: () {
             setState(() {
               _selectedIndex = index;
             });
           },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
-              color: isSelected ? selectedColor.withOpacity(0.1) : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              border: isSelected ? Border.all(color: selectedColor.withOpacity(0.3)) : null,
+              gradient: isSelected
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [selectedColor.withOpacity(0.15), selectedColor.withOpacity(0.08)],
+                    )
+                  : null,
+              borderRadius: BorderRadius.circular(16),
+              border: isSelected
+                  ? Border.all(color: selectedColor.withOpacity(0.3), width: 1.5)
+                  : Border.all(color: Colors.transparent, width: 1.5),
+              boxShadow: isSelected
+                  ? [BoxShadow(color: selectedColor.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))]
+                  : null,
             ),
             child: Row(
               children: [
-                Icon(icon, color: isSelected ? selectedColor : color, size: 20),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: isSelected ? selectedColor : color,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    fontSize: 14,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? selectedColor.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: isSelected ? selectedColor : color, size: 18),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: isSelected ? selectedColor : color,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 15,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ),
+                if (isSelected)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(color: selectedColor, shape: BoxShape.circle),
+                  ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildThemeToggle() {
-    return Consumer<ThemeNotifier>(
-      builder: (context, themeNotifier, child) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                themeNotifier.toggleTheme();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF6B7280), width: 1),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      themeNotifier.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                      color: const Color(0xFF6B7280),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      themeNotifier.isDarkMode ? 'Açık Tema' : 'Koyu Tema',
-                      style: const TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.normal, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -237,31 +393,37 @@ class _AdminPanelViewState extends State<AdminPanelView> {
   }
 
   Widget _buildDashboard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Text('Dashboard', style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(
-            'Akıllı Şehir yönetim paneli',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: const Color(0xFF6B7280)),
-          ),
-          const SizedBox(height: 32),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Text('Dashboard', style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(
+              'Akıllı Şehir yönetim paneli',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: const Color(0xFF6B7280)),
+            ),
+            const SizedBox(height: 32),
 
-          // Stats Cards
-          _buildStatsSection(),
-          const SizedBox(height: 32),
+            // Stats Cards
+            _buildStatsSection(),
+            const SizedBox(height: 32),
 
-          // Charts Section
-          _buildChartsSection(),
-          const SizedBox(height: 32),
+            // Charts Section
+            _buildChartsSection(),
+            const SizedBox(height: 32),
 
-          // Recent Activity
-          _buildRecentActivity(),
-        ],
+            // Recent Activity
+            _buildRecentActivity(),
+
+            // Bottom padding for better scroll experience
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }
@@ -269,44 +431,65 @@ class _AdminPanelViewState extends State<AdminPanelView> {
   Widget _buildStatsSection() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isMobile = constraints.maxWidth < 800;
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            _buildStatCard(
-              title: 'Toplam Duyuru',
-              value: '24',
-              icon: Icons.campaign,
-              color: const Color(0xFF3B82F6),
-              change: '+12%',
-              isPositive: true,
-            ),
-            _buildStatCard(
-              title: 'Aktif Etkinlik',
-              value: '8',
-              icon: Icons.event,
-              color: const Color(0xFF10B981),
-              change: '+5%',
-              isPositive: true,
-            ),
-            _buildStatCard(
-              title: 'Toplam Haber',
-              value: '156',
-              icon: Icons.article,
-              color: const Color(0xFFF59E0B),
-              change: '+23%',
-              isPositive: true,
-            ),
-            _buildStatCard(
-              title: 'Aktif Kullanıcı',
-              value: '2.5K',
-              icon: Icons.people,
-              color: const Color(0xFF8B5CF6),
-              change: '+8%',
-              isPositive: true,
-            ),
-          ],
+        return Consumer5<AnnouncementViewModel, EventViewModel, NewsViewModel, CityServiceViewModel, ProjectViewModel>(
+          builder: (context, announcementVM, eventVM, newsVM, cityServiceVM, projectVM, child) {
+            return Observer(
+              builder: (_) {
+                final announcementCount = announcementVM.announcementList?.length ?? 0;
+                final eventCount = eventVM.eventList?.length ?? 0;
+                final newsCount = newsVM.newsList?.length ?? 0;
+                final cityServiceCount = cityServiceVM.cityServiceList?.length ?? 0;
+                final projectCount = projectVM.projectList?.length ?? 0;
+
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    _buildStatCard(
+                      title: 'Toplam Duyuru',
+                      value: announcementCount.toString(),
+                      icon: Icons.campaign,
+                      color: const Color(0xFF3B82F6),
+                      change: announcementCount > 0 ? '+$announcementCount' : '0',
+                      isPositive: announcementCount > 0,
+                    ),
+                    _buildStatCard(
+                      title: 'Aktif Etkinlik',
+                      value: eventCount.toString(),
+                      icon: Icons.event,
+                      color: const Color(0xFF10B981),
+                      change: eventCount > 0 ? '+$eventCount' : '0',
+                      isPositive: eventCount > 0,
+                    ),
+                    _buildStatCard(
+                      title: 'Toplam Haber',
+                      value: newsCount.toString(),
+                      icon: Icons.article,
+                      color: const Color(0xFFF59E0B),
+                      change: newsCount > 0 ? '+$newsCount' : '0',
+                      isPositive: newsCount > 0,
+                    ),
+                    _buildStatCard(
+                      title: 'Şehir Hizmetleri',
+                      value: cityServiceCount.toString(),
+                      icon: Icons.business,
+                      color: const Color(0xFF8B5CF6),
+                      change: cityServiceCount > 0 ? '+$cityServiceCount' : '0',
+                      isPositive: cityServiceCount > 0,
+                    ),
+                    _buildStatCard(
+                      title: 'Toplam Proje',
+                      value: projectCount.toString(),
+                      icon: Icons.work_outline,
+                      color: const Color(0xFF06B6D4),
+                      change: projectCount > 0 ? '+$projectCount' : '0',
+                      isPositive: projectCount > 0,
+                    ),
+                  ],
+                );
+              },
+            );
+          },
         );
       },
     );
@@ -321,13 +504,25 @@ class _AdminPanelViewState extends State<AdminPanelView> {
     required bool isPositive,
   }) {
     return Container(
-      width: 280,
-      padding: const EdgeInsets.all(24),
+      width: 300,
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white.withOpacity(0.9), Colors.white.withOpacity(0.7)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: color.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10), spreadRadius: 0),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 40,
+            offset: const Offset(0, 20),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,17 +531,29 @@ class _AdminPanelViewState extends State<AdminPanelView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Icon(icon, color: color, size: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [color.withOpacity(0.15), color.withOpacity(0.08)]),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: color.withOpacity(0.2), width: 1),
+                ),
+                child: Icon(icon, color: color, size: 28),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isPositive
-                      ? const Color(0xFF10B981).withOpacity(0.1)
-                      : const Color(0xFFEF4444).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    colors: isPositive
+                        ? [const Color(0xFF10B981).withOpacity(0.2), const Color(0xFF10B981).withOpacity(0.1)]
+                        : [const Color(0xFFEF4444).withOpacity(0.2), const Color(0xFFEF4444).withOpacity(0.1)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isPositive
+                        ? const Color(0xFF10B981).withOpacity(0.3)
+                        : const Color(0xFFEF4444).withOpacity(0.3),
+                    width: 1,
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -370,13 +577,25 @@ class _AdminPanelViewState extends State<AdminPanelView> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             value,
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(color: color, fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 36,
+              letterSpacing: -1,
+            ),
           ),
           const SizedBox(height: 8),
-          Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: const Color(0xFF6B7280))),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: const Color(0xFF64748B),
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
         ],
       ),
     );
@@ -420,21 +639,46 @@ class _AdminPanelViewState extends State<AdminPanelView> {
 
   Widget _buildChartCard({required String title, required String subtitle, required Widget child}) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white.withOpacity(0.9), Colors.white.withOpacity(0.7)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF1E3A8A).withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: const Color(0xFF1E3A8A).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 40,
+            offset: const Offset(0, 20),
+            spreadRadius: 0,
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, fontSize: 20, color: const Color(0xFF1E293B)),
+          ),
           const SizedBox(height: 4),
-          Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
+          Text(
+            subtitle,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B), fontWeight: FontWeight.w500),
+          ),
           const SizedBox(height: 16),
           child,
         ],
@@ -444,44 +688,193 @@ class _AdminPanelViewState extends State<AdminPanelView> {
 
   Widget _buildRecentActivity() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white.withOpacity(0.9), Colors.white.withOpacity(0.7)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF1E3A8A).withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(
+            color: const Color(0xFF1E3A8A).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 40,
+            offset: const Offset(0, 20),
+            spreadRadius: 0,
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Son Aktiviteler', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Son Aktiviteler',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, fontSize: 20, color: const Color(0xFF1E293B)),
+          ),
           const SizedBox(height: 16),
-          _buildActivityItem(
-            icon: Icons.campaign,
-            title: 'Yeni duyuru eklendi',
-            subtitle: 'Havuzbaşı meydanında yeni araç filosu tanıtılacak',
-            time: '2 saat önce',
-            color: const Color(0xFF3B82F6),
-          ),
-          _buildActivityItem(
-            icon: Icons.event,
-            title: 'Etkinlik güncellendi',
-            subtitle: 'Erzurum Yaz Festivali tarihi değiştirildi',
-            time: '4 saat önce',
-            color: const Color(0xFF10B981),
-          ),
-          _buildActivityItem(
-            icon: Icons.article,
-            title: 'Haber yayınlandı',
-            subtitle: 'Yeni şehir projeleri hakkında haber',
-            time: '6 saat önce',
-            color: const Color(0xFFF59E0B),
+          Consumer5<AnnouncementViewModel, EventViewModel, NewsViewModel, CityServiceViewModel, ProjectViewModel>(
+            builder: (context, announcementVM, eventVM, newsVM, cityServiceVM, projectVM, child) {
+              return Observer(
+                builder: (_) {
+                  List<Widget> activities = [];
+
+                  // En son duyuru (tarihe göre sıralı)
+                  if (announcementVM.announcementList?.isNotEmpty == true) {
+                    final sortedAnnouncements = List.from(announcementVM.announcementList!)
+                      ..sort((a, b) {
+                        if (a.date == null && b.date == null) return 0;
+                        if (a.date == null) return 1;
+                        if (b.date == null) return -1;
+                        return b.date!.compareTo(a.date!);
+                      });
+                    final latestAnnouncement = sortedAnnouncements.first;
+                    activities.add(
+                      _buildActivityItem(
+                        icon: Icons.campaign,
+                        title: 'Yeni duyuru eklendi',
+                        subtitle: latestAnnouncement.title ?? 'Yeni duyuru',
+                        time: _getTimeAgoFromDate(latestAnnouncement.date),
+                        color: const Color(0xFF3B82F6),
+                      ),
+                    );
+                  }
+
+                  // En son etkinlik (tarihe göre sıralı)
+                  if (eventVM.eventList?.isNotEmpty == true) {
+                    final sortedEvents = List.from(eventVM.eventList!)
+                      ..sort((a, b) {
+                        if (a.date == null && b.date == null) return 0;
+                        if (a.date == null) return 1;
+                        if (b.date == null) return -1;
+                        return b.date!.compareTo(a.date!);
+                      });
+                    final latestEvent = sortedEvents.first;
+                    activities.add(
+                      _buildActivityItem(
+                        icon: Icons.event,
+                        title: 'Yeni etkinlik eklendi',
+                        subtitle: latestEvent.title ?? 'Yeni etkinlik',
+                        time: _getTimeAgoFromDate(latestEvent.date),
+                        color: const Color(0xFF10B981),
+                      ),
+                    );
+                  }
+
+                  // En son haber (tarihe göre sıralı)
+                  if (newsVM.newsList?.isNotEmpty == true) {
+                    final sortedNews = List.from(newsVM.newsList!)
+                      ..sort((a, b) {
+                        if (a.publishedAt == null && b.publishedAt == null) return 0;
+                        if (a.publishedAt == null) return 1;
+                        if (b.publishedAt == null) return -1;
+                        return b.publishedAt!.compareTo(a.publishedAt!);
+                      });
+                    final latestNews = sortedNews.first;
+                    activities.add(
+                      _buildActivityItem(
+                        icon: Icons.article,
+                        title: 'Yeni haber yayınlandı',
+                        subtitle: latestNews.title ?? 'Yeni haber',
+                        time: _getTimeAgoFromDate(latestNews.publishedAt),
+                        color: const Color(0xFFF59E0B),
+                      ),
+                    );
+                  }
+
+                  // En son şehir hizmeti
+                  if (cityServiceVM.cityServiceList?.isNotEmpty == true) {
+                    final latestService = cityServiceVM.cityServiceList!.last;
+                    activities.add(
+                      _buildActivityItem(
+                        icon: Icons.business,
+                        title: 'Yeni şehir hizmeti eklendi',
+                        subtitle: latestService.title ?? 'Yeni hizmet',
+                        time: 'Yakın zamanda',
+                        color: const Color(0xFF8B5CF6),
+                      ),
+                    );
+                  }
+
+                  // En son proje
+                  if (projectVM.projectList?.isNotEmpty == true) {
+                    final latestProject = projectVM.projectList!.last;
+                    activities.add(
+                      _buildActivityItem(
+                        icon: Icons.work_outline,
+                        title: 'Yeni proje eklendi',
+                        subtitle: latestProject.title ?? 'Yeni proje',
+                        time: 'Yakın zamanda',
+                        color: const Color(0xFF06B6D4),
+                      ),
+                    );
+                  }
+
+                  // Eğer hiç aktivite yoksa placeholder göster
+                  if (activities.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          Icon(Icons.history, size: 48, color: Colors.grey.shade400),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Henüz aktivite bulunmuyor',
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  // Son 5 aktiviteyi göster
+                  if (activities.length > 5) {
+                    activities = activities.take(5).toList();
+                  }
+
+                  return Column(children: activities);
+                },
+              );
+            },
           ),
         ],
       ),
     );
+  }
+
+  String _getTimeAgoFromDate(DateTime? date) {
+    if (date == null) return 'Yakın zamanda';
+
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) {
+      return 'Az önce';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} dakika önce';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} saat önce';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} gün önce';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '$weeks hafta önce';
+    } else if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return '$months ay önce';
+    } else {
+      final years = (difference.inDays / 365).floor();
+      return '$years yıl önce';
+    }
   }
 
   Widget _buildActivityItem({
@@ -492,26 +885,51 @@ class _AdminPanelViewState extends State<AdminPanelView> {
     required Color color,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [color.withOpacity(0.05), color.withOpacity(0.02)]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.1), width: 1),
+      ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: color, size: 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [color.withOpacity(0.2), color.withOpacity(0.1)]),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: color.withOpacity(0.3), width: 1),
+            ),
+            child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: const Color(0xFF1E293B)),
+                ),
                 const SizedBox(height: 4),
-                Text(subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                Text(
+                  subtitle,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B), fontWeight: FontWeight.w500),
+                ),
               ],
             ),
           ),
-          Text(time, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF9CA3AF))),
+          Text(
+            time,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF94A3B8), fontWeight: FontWeight.w500, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -524,116 +942,118 @@ class _AdminPanelViewState extends State<AdminPanelView> {
           builder: (_) {
             final announcements = viewModel.announcementList ?? [];
             return Container(
-              padding: const EdgeInsets.all(24),
+              padding: AdminTableCardConstants.contentPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Duyuru Yönetimi',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
+                  AdminSectionHeader(
+                    title: 'Duyuru Yönetimi',
+                    subtitle: 'Tüm duyuruları yönetin ve düzenleyin',
+                    action: ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => _AnnouncementFormDialog(),
+                        );
+                        if (result == true) {
+                          await viewModel.fetchAnnouncement();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Yeni Duyuru'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF3B82F6),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final result = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => _AnnouncementFormDialog(),
-                          );
-                          if (result == true) {
-                            await viewModel.fetchAnnouncement();
-                          }
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Yeni Duyuru'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  if (viewModel.isLoading) const Center(child: CircularProgressIndicator()),
-                  if (!viewModel.isLoading && announcements.isEmpty)
-                    const Center(
-                      child: Text('Hiç duyuru yok.', style: TextStyle(fontSize: 18, color: Color(0xFF6B7280))),
                     ),
+                  ),
+                  if (viewModel.isLoading) const AdminLoadingWidget(),
+                  if (!viewModel.isLoading && announcements.isEmpty)
+                    const AdminEmptyStateWidget(message: 'Hiç duyuru yok.', icon: Icons.campaign_outlined),
                   if (!viewModel.isLoading && announcements.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
-                      ),
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Başlık')),
-                          DataColumn(label: Text('Açıklama')),
-                          DataColumn(label: Text('Tarih')),
-                          DataColumn(label: Text('İşlemler')),
-                        ],
-                        rows: announcements.map((announcement) {
-                          return DataRow(
-                            cells: [
-                              DataCell(Text(announcement.title ?? '')),
-                              DataCell(Text(announcement.content ?? '')),
-                              DataCell(
-                                Text(
-                                  announcement.date != null
-                                      ? announcement.date!.toIso8601String().substring(0, 10)
-                                      : '',
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: AdminDataTable(
+                          columns: const [
+                            DataColumn(label: Text('Başlık')),
+                            DataColumn(label: Text('Açıklama')),
+                            DataColumn(label: Text('Tarih')),
+                            DataColumn(label: Text('İşlemler')),
+                          ],
+                          rows: announcements.map((announcement) {
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 200),
+                                    child: Text(announcement.title ?? '', overflow: TextOverflow.ellipsis, maxLines: 2),
+                                  ),
                                 ),
-                              ),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
-                                      tooltip: 'Düzenle',
-                                      onPressed: () async {
-                                        final result = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => _AnnouncementFormDialog(announcement: announcement),
-                                        );
-                                        if (result == true) {
-                                          await viewModel.fetchAnnouncement();
-                                        }
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
-                                      tooltip: 'Sil',
-                                      onPressed: () async {
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text('Duyuru Sil'),
-                                            content: const Text('Bu duyuruyu silmek istediğinize emin misiniz?'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(context, false),
-                                                child: const Text('Vazgeç'),
-                                              ),
-                                              ElevatedButton(
-                                                onPressed: () => Navigator.pop(context, true),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFFEF4444),
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 300),
+                                    child: Text(announcement.content ?? '', overflow: TextOverflow.ellipsis, maxLines: 3),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    announcement.date != null ? announcement.date!.toIso8601String().substring(0, 10) : '',
+                                  ),
+                                ),
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
+                                        tooltip: 'Düzenle',
+                                        onPressed: () async {
+                                          final result = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => _AnnouncementFormDialog(announcement: announcement),
+                                          );
+                                          if (result == true) {
+                                            await viewModel.fetchAnnouncement();
+                                          }
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
+                                        tooltip: 'Sil',
+                                        onPressed: () async {
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Duyuru Sil'),
+                                              content: const Text('Bu duyuruyu silmek istediğinize emin misiniz?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context, false),
+                                                  child: const Text('Vazgeç'),
                                                 ),
-                                                child: const Text('Sil'),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        if (confirm == true) {
-                                          await viewModel.deleteAnnouncement(announcement.id!);
-                                        }
-                                      },
-                                    ),
-                                  ],
+                                                ElevatedButton(
+                                                  onPressed: () => Navigator.pop(context, true),
+                                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                                                  child: const Text('Sil'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            await viewModel.deleteAnnouncement(announcement.id!);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
                 ],
@@ -652,112 +1072,121 @@ class _AdminPanelViewState extends State<AdminPanelView> {
           builder: (_) {
             final events = viewModel.eventList ?? [];
             return Container(
-              padding: const EdgeInsets.all(24),
+              padding: AdminTableCardConstants.contentPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Etkinlik Yönetimi',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
+                  AdminSectionHeader(
+                    title: 'Etkinlik Yönetimi',
+                    subtitle: 'Tüm etkinlikleri yönetin ve düzenleyin',
+                    action: ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => _EventFormDialog(),
+                        );
+                        if (result == true) {
+                          await viewModel.fetchEvents();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Yeni Etkinlik'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final result = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => _EventFormDialog(),
-                          );
-                          if (result == true) {
-                            await viewModel.fetchEvents();
-                          }
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Yeni Etkinlik'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  if (viewModel.isLoading) const Center(child: CircularProgressIndicator()),
-                  if (!viewModel.isLoading && events.isEmpty)
-                    const Center(
-                      child: Text('Hiç etkinlik yok.', style: TextStyle(fontSize: 18, color: Color(0xFF6B7280))),
                     ),
+                  ),
+                  if (viewModel.isLoading) const AdminLoadingWidget(),
+                  if (!viewModel.isLoading && events.isEmpty)
+                    const AdminEmptyStateWidget(message: 'Hiç etkinlik yok.', icon: Icons.event_outlined),
                   if (!viewModel.isLoading && events.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
-                      ),
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Başlık')),
-                          DataColumn(label: Text('Açıklama')),
-                          DataColumn(label: Text('Konum')),
-                          DataColumn(label: Text('Tarih')),
-                          DataColumn(label: Text('İşlemler')),
-                        ],
-                        rows: events.map((event) {
-                          return DataRow(
-                            cells: [
-                              DataCell(Text(event.title ?? '')),
-                              DataCell(Text(event.description ?? '')),
-                              DataCell(Text(event.location ?? '')),
-                              DataCell(Text(event.date != null ? event.date!.toIso8601String().substring(0, 10) : '')),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
-                                      tooltip: 'Düzenle',
-                                      onPressed: () async {
-                                        final result = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => _EventFormDialog(event: event),
-                                        );
-                                        if (result == true) {
-                                          await viewModel.fetchEvents();
-                                        }
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
-                                      tooltip: 'Sil',
-                                      onPressed: () async {
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text('Etkinlik Sil'),
-                                            content: const Text('Bu etkinliği silmek istediğinize emin misiniz?'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(context, false),
-                                                child: const Text('Vazgeç'),
-                                              ),
-                                              ElevatedButton(
-                                                onPressed: () => Navigator.pop(context, true),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFFEF4444),
-                                                ),
-                                                child: const Text('Sil'),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        if (confirm == true) {
-                                          await viewModel.deleteEvent(event.id!);
-                                        }
-                                      },
-                                    ),
-                                  ],
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: AdminDataTable(
+                          columns: const [
+                            DataColumn(label: Text('Başlık')),
+                            DataColumn(label: Text('Açıklama')),
+                            DataColumn(label: Text('Konum')),
+                            DataColumn(label: Text('Tarih')),
+                            DataColumn(label: Text('İşlemler')),
+                          ],
+                          rows: events.map((event) {
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 180),
+                                    child: Text(event.title ?? '', overflow: TextOverflow.ellipsis, maxLines: 2),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 250),
+                                    child: Text(event.description ?? '', overflow: TextOverflow.ellipsis, maxLines: 3),
+                                  ),
+                                ),
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 150),
+                                    child: Text(event.location ?? '', overflow: TextOverflow.ellipsis, maxLines: 2),
+                                  ),
+                                ),
+                                DataCell(Text(event.date != null ? event.date!.toIso8601String().substring(0, 10) : '')),
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
+                                        tooltip: 'Düzenle',
+                                        onPressed: () async {
+                                          final result = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => _EventFormDialog(event: event),
+                                          );
+                                          if (result == true) {
+                                            await viewModel.fetchEvents();
+                                          }
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
+                                        tooltip: 'Sil',
+                                        onPressed: () async {
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Etkinlik Sil'),
+                                              content: const Text('Bu etkinliği silmek istediğinize emin misiniz?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context, false),
+                                                  child: const Text('Vazgeç'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () => Navigator.pop(context, true),
+                                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                                                  child: const Text('Sil'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            await viewModel.deleteEvent(event.id!);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
                 ],
@@ -776,114 +1205,118 @@ class _AdminPanelViewState extends State<AdminPanelView> {
           builder: (_) {
             final newsList = viewModel.newsList ?? [];
             return Container(
-              padding: const EdgeInsets.all(24),
+              padding: AdminTableCardConstants.contentPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Haber Yönetimi',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
+                  AdminSectionHeader(
+                    title: 'Haber Yönetimi',
+                    subtitle: 'Tüm haberleri yönetin ve düzenleyin',
+                    action: ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => _NewsFormDialog(),
+                        );
+                        if (result == true) {
+                          await viewModel.fetchNews();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Yeni Haber'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF59E0B),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final result = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => _NewsFormDialog(),
-                          );
-                          if (result == true) {
-                            await viewModel.fetchNews();
-                          }
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Yeni Haber'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  if (viewModel.isLoading) const Center(child: CircularProgressIndicator()),
-                  if (!viewModel.isLoading && newsList.isEmpty)
-                    const Center(
-                      child: Text('Hiç haber yok.', style: TextStyle(fontSize: 18, color: Color(0xFF6B7280))),
                     ),
+                  ),
+                  if (viewModel.isLoading) const AdminLoadingWidget(),
+                  if (!viewModel.isLoading && newsList.isEmpty)
+                    const AdminEmptyStateWidget(message: 'Hiç haber yok.', icon: Icons.article_outlined),
                   if (!viewModel.isLoading && newsList.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
-                      ),
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Başlık')),
-                          DataColumn(label: Text('Açıklama')),
-                          DataColumn(label: Text('Tarih')),
-                          DataColumn(label: Text('İşlemler')),
-                        ],
-                        rows: newsList.map((news) {
-                          return DataRow(
-                            cells: [
-                              DataCell(Text(news.title ?? '')),
-                              DataCell(Text(news.content ?? '')),
-                              DataCell(
-                                Text(
-                                  news.publishedAt != null ? news.publishedAt!.toIso8601String().substring(0, 10) : '',
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: AdminDataTable(
+                          columns: const [
+                            DataColumn(label: Text('Başlık')),
+                            DataColumn(label: Text('Açıklama')),
+                            DataColumn(label: Text('Tarih')),
+                            DataColumn(label: Text('İşlemler')),
+                          ],
+                          rows: newsList.map((news) {
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 200),
+                                    child: Text(news.title ?? '', overflow: TextOverflow.ellipsis, maxLines: 2),
+                                  ),
                                 ),
-                              ),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
-                                      tooltip: 'Düzenle',
-                                      onPressed: () async {
-                                        final result = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => _NewsFormDialog(news: news),
-                                        );
-                                        if (result == true) {
-                                          await viewModel.fetchNews();
-                                        }
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
-                                      tooltip: 'Sil',
-                                      onPressed: () async {
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text('Haber Sil'),
-                                            content: const Text('Bu haberi silmek istediğinize emin misiniz?'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(context, false),
-                                                child: const Text('Vazgeç'),
-                                              ),
-                                              ElevatedButton(
-                                                onPressed: () => Navigator.pop(context, true),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFFEF4444),
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 300),
+                                    child: Text(news.content ?? '', overflow: TextOverflow.ellipsis, maxLines: 3),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    news.publishedAt != null ? news.publishedAt!.toIso8601String().substring(0, 10) : '',
+                                  ),
+                                ),
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
+                                        tooltip: 'Düzenle',
+                                        onPressed: () async {
+                                          final result = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => _NewsFormDialog(news: news),
+                                          );
+                                          if (result == true) {
+                                            await viewModel.fetchNews();
+                                          }
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
+                                        tooltip: 'Sil',
+                                        onPressed: () async {
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Haber Sil'),
+                                              content: const Text('Bu haberi silmek istediğinize emin misiniz?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context, false),
+                                                  child: const Text('Vazgeç'),
                                                 ),
-                                                child: const Text('Sil'),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        if (confirm == true) {
-                                          await viewModel.deleteNews(news.id!);
-                                        }
-                                      },
-                                    ),
-                                  ],
+                                                ElevatedButton(
+                                                  onPressed: () => Navigator.pop(context, true),
+                                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                                                  child: const Text('Sil'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            await viewModel.deleteNews(news.id!);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
                 ],
@@ -902,110 +1335,119 @@ class _AdminPanelViewState extends State<AdminPanelView> {
           builder: (_) {
             final cityServiceList = viewModel.cityServiceList ?? [];
             return Container(
-              padding: const EdgeInsets.all(24),
+              padding: AdminTableCardConstants.contentPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Şehir Hizmetleri Yönetimi',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
+                  AdminSectionHeader(
+                    title: 'Şehir Hizmetleri Yönetimi',
+                    subtitle: 'Tüm şehir hizmetlerini yönetin ve düzenleyin',
+                    action: ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => _CityServiceFormDialog(),
+                        );
+                        if (result == true) {
+                          await viewModel.fetchCityService();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Yeni Hizmet'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final result = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => _CityServiceFormDialog(),
-                          );
-                          if (result == true) {
-                            await viewModel.fetchCityService();
-                          }
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Yeni Hizmet'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  if (viewModel.isLoading) const Center(child: CircularProgressIndicator()),
-                  if (!viewModel.isLoading && cityServiceList.isEmpty)
-                    const Center(
-                      child: Text('Hiç şehir hizmeti yok.', style: TextStyle(fontSize: 18, color: Color(0xFF6B7280))),
                     ),
+                  ),
+                  if (viewModel.isLoading) const AdminLoadingWidget(),
+                  if (!viewModel.isLoading && cityServiceList.isEmpty)
+                    const AdminEmptyStateWidget(message: 'Hiç şehir hizmeti yok.', icon: Icons.business_outlined),
                   if (!viewModel.isLoading && cityServiceList.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.all(0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
-                      ),
-                      child: DataTable(
-                        columns: const [
-                          DataColumn(label: Text('Başlık')),
-                          DataColumn(label: Text('Açıklama')),
-                          DataColumn(label: Text('İkon URL')),
-                          DataColumn(label: Text('İşlemler')),
-                        ],
-                        rows: cityServiceList.map((service) {
-                          return DataRow(
-                            cells: [
-                              DataCell(Text(service.title ?? '')),
-                              DataCell(Text(service.description ?? '')),
-                              DataCell(Text(service.iconUrl ?? '')),
-                              DataCell(
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
-                                      tooltip: 'Düzenle',
-                                      onPressed: () async {
-                                        final result = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => _CityServiceFormDialog(service: service),
-                                        );
-                                        if (result == true) {
-                                          await viewModel.fetchCityService();
-                                        }
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
-                                      tooltip: 'Sil',
-                                      onPressed: () async {
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: const Text('Hizmet Sil'),
-                                            content: const Text('Bu hizmeti silmek istediğinize emin misiniz?'),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(context, false),
-                                                child: const Text('Vazgeç'),
-                                              ),
-                                              ElevatedButton(
-                                                onPressed: () => Navigator.pop(context, true),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFFEF4444),
-                                                ),
-                                                child: const Text('Sil'),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                        if (confirm == true) {
-                                          await viewModel.deleteCityService(service.id!);
-                                        }
-                                      },
-                                    ),
-                                  ],
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: AdminDataTable(
+                          columns: const [
+                            DataColumn(label: Text('Başlık')),
+                            DataColumn(label: Text('Açıklama')),
+                            DataColumn(label: Text('İkon URL')),
+                            DataColumn(label: Text('İşlemler')),
+                          ],
+                          rows: cityServiceList.map((service) {
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 180),
+                                    child: Text(service.title ?? '', overflow: TextOverflow.ellipsis, maxLines: 2),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 280),
+                                    child: Text(service.description ?? '', overflow: TextOverflow.ellipsis, maxLines: 3),
+                                  ),
+                                ),
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 200),
+                                    child: Text(service.iconUrl ?? '', overflow: TextOverflow.ellipsis, maxLines: 2),
+                                  ),
+                                ),
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
+                                        tooltip: 'Düzenle',
+                                        onPressed: () async {
+                                          final result = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => _CityServiceFormDialog(service: service),
+                                          );
+                                          if (result == true) {
+                                            await viewModel.fetchCityService();
+                                          }
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
+                                        tooltip: 'Sil',
+                                        onPressed: () async {
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Hizmet Sil'),
+                                              content: const Text('Bu hizmeti silmek istediğinize emin misiniz?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context, false),
+                                                  child: const Text('Vazgeç'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () => Navigator.pop(context, true),
+                                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                                                  child: const Text('Sil'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            await viewModel.deleteCityService(service.id!);
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
                 ],
@@ -1023,144 +1465,128 @@ class _AdminPanelViewState extends State<AdminPanelView> {
         return Observer(
           builder: (_) {
             final projects = viewModel.projectList ?? [];
-            return SingleChildScrollView(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Projeler Yönetimi',
-                          style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            final result = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => _ProjectFormDialog(),
-                            );
-                            if (result == true) {
-                              await viewModel.fetchProjects();
-                            }
-                          },
-                          icon: const Icon(Icons.add),
-                          label: const Text('Yeni Proje'),
-                        ),
-                      ],
+            return Container(
+              padding: AdminTableCardConstants.contentPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AdminSectionHeader(
+                    title: 'Projeler Yönetimi',
+                    subtitle: 'Tüm projeleri yönetin ve düzenleyin',
+                    action: ElevatedButton.icon(
+                      onPressed: () async {
+                        final result = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => _ProjectFormDialog(),
+                        );
+                        if (result == true) {
+                          await viewModel.fetchProjects();
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Yeni Proje'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF06B6D4),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
-                    const SizedBox(height: 24),
-                    if (viewModel.isLoading) const Center(child: CircularProgressIndicator()),
-                    if (!viewModel.isLoading && projects.isEmpty)
-                      const Center(
-                        child: Text('Hiç proje yok.', style: TextStyle(fontSize: 18, color: Color(0xFF6B7280))),
-                      ),
-                    if (!viewModel.isLoading && projects.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: DataTable(
-                            columnSpacing: 20,
-                            columns: const [
-                              DataColumn(label: Text('Başlık')),
-                              DataColumn(label: Text('Açıklama')),
-                              DataColumn(label: Text('Resim URL')),
-                              DataColumn(label: Text('İşlemler')),
-                            ],
-                            rows: projects.map((project) {
-                              return DataRow(
-                                cells: [
-                                  DataCell(
-                                    SizedBox(
-                                      width: 150,
-                                      child: Text(project.title ?? '', overflow: TextOverflow.ellipsis, maxLines: 2),
+                  ),
+                  if (viewModel.isLoading) const AdminLoadingWidget(),
+                  if (!viewModel.isLoading && projects.isEmpty)
+                    const AdminEmptyStateWidget(message: 'Hiç proje yok.', icon: Icons.work_outline),
+                  if (!viewModel.isLoading && projects.isNotEmpty)
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: AdminDataTable(
+                          columnSpacing: 25,
+                          columns: const [
+                            DataColumn(label: Text('Başlık')),
+                            DataColumn(label: Text('Açıklama')),
+                            DataColumn(label: Text('Resim URL')),
+                            DataColumn(label: Text('İşlemler')),
+                          ],
+                          rows: projects.map((project) {
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 180),
+                                    child: Text(project.title ?? '', overflow: TextOverflow.ellipsis, maxLines: 2),
+                                  ),
+                                ),
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 250),
+                                    child: Text(project.description ?? '', overflow: TextOverflow.ellipsis, maxLines: 3),
+                                  ),
+                                ),
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 200),
+                                    child: Text(
+                                      project.imageUrl ?? 'Resim yok',
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
                                     ),
                                   ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 200,
-                                      child: Text(
-                                        project.description ?? '',
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 3,
+                                ),
+                                DataCell(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
+                                        tooltip: 'Düzenle',
+                                        onPressed: () async {
+                                          final result = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => _ProjectFormDialog(project: project),
+                                          );
+                                          if (result == true) {
+                                            await viewModel.fetchProjects();
+                                          }
+                                        },
                                       ),
-                                    ),
-                                  ),
-                                  DataCell(
-                                    SizedBox(
-                                      width: 150,
-                                      child: Text(
-                                        project.imageUrl ?? 'Resim yok',
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 2,
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
+                                        tooltip: 'Sil',
+                                        onPressed: () async {
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Proje Sil'),
+                                              content: const Text('Bu projeyi silmek istediğinize emin misiniz?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context, false),
+                                                  child: const Text('Vazgeç'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () => Navigator.pop(context, true),
+                                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                                                  child: const Text('Sil'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            await viewModel.deleteProject(project.id!);
+                                          }
+                                        },
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                  DataCell(
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
-                                          tooltip: 'Düzenle',
-                                          onPressed: () async {
-                                            final result = await showDialog<bool>(
-                                              context: context,
-                                              builder: (context) => _ProjectFormDialog(project: project),
-                                            );
-                                            if (result == true) {
-                                              await viewModel.fetchProjects();
-                                            }
-                                          },
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
-                                          tooltip: 'Sil',
-                                          onPressed: () async {
-                                            final confirm = await showDialog<bool>(
-                                              context: context,
-                                              builder: (context) => AlertDialog(
-                                                title: const Text('Proje Sil'),
-                                                content: const Text('Bu projeyi silmek istediğinize emin misiniz?'),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () => Navigator.pop(context, false),
-                                                    child: const Text('Vazgeç'),
-                                                  ),
-                                                  ElevatedButton(
-                                                    onPressed: () => Navigator.pop(context, true),
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor: const Color(0xFFEF4444),
-                                                    ),
-                                                    child: const Text('Sil'),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                            if (confirm == true) {
-                                              await viewModel.deleteProject(project.id!);
-                                            }
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
-                          ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             );
           },
@@ -1170,32 +1596,138 @@ class _AdminPanelViewState extends State<AdminPanelView> {
   }
 
   Widget _buildUsers() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Kullanıcı Yönetimi',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            child: const Center(
-              child: Text(
-                'Kullanıcı yönetim paneli burada olacak',
-                style: TextStyle(fontSize: 18, color: Color(0xFF6B7280)),
+    return Observer(
+      builder: (_) {
+        final viewModel = Provider.of<AdminUserViewModel>(context, listen: false);
+        final users = viewModel.adminUserList ?? [];
+        return Container(
+          padding: AdminTableCardConstants.contentPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AdminSectionHeader(
+                title: 'Admin Kullanıcı Yönetimi',
+                subtitle: 'Tüm admin kullanıcıları yönetin ve düzenleyin',
+                action: ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => _AdminUserFormDialog(),
+                    );
+                    if (result == true) {
+                      await viewModel.fetchAdminUsers();
+                    }
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Yeni Admin'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8B5CF6),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
               ),
-            ),
+              if (viewModel.isLoading) const AdminLoadingWidget(),
+              if (!viewModel.isLoading && users.isEmpty)
+                const AdminEmptyStateWidget(message: 'Hiç admin kullanıcı yok.', icon: Icons.people_outlined),
+              if (!viewModel.isLoading && users.isNotEmpty)
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: AdminDataTable(
+                      columns: const [
+                        DataColumn(label: Text('Kullanıcı Adı')),
+                        DataColumn(label: Text('Rol')),
+                        DataColumn(label: Text('Oluşturulma Tarihi')),
+                        DataColumn(label: Text('İşlemler')),
+                      ],
+                      rows: users.map<DataRow>((AdminUserModel user) {
+                        return DataRow(
+                          cells: [
+                            DataCell(Text(user.username ?? '')),
+                            DataCell(
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF8B5CF6).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.3)),
+                                ),
+                                child: Text(
+                                  (user.role ?? '').toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Color(0xFF8B5CF6),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            DataCell(
+                              Text(
+                                user.createdAt != null
+                                    ? '${user.createdAt!.day}/${user.createdAt!.month}/${user.createdAt!.year}'
+                                    : 'Bilinmiyor',
+                              ),
+                            ),
+                            DataCell(
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Color(0xFF3B82F6)),
+                                    tooltip: 'Düzenle',
+                                    onPressed: () async {
+                                      final result = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => _AdminUserFormDialog(user: user),
+                                      );
+                                      if (result == true) {
+                                        await viewModel.fetchAdminUsers();
+                                      }
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Color(0xFFEF4444)),
+                                    tooltip: 'Sil',
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Admin Kullanıcı Sil'),
+                                          content: const Text('Bu admin kullanıcıyı silmek istediğinize emin misiniz?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context, false),
+                                              child: const Text('Vazgeç'),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () => Navigator.pop(context, true),
+                                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                                              child: const Text('Sil'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        await viewModel.deleteAdminUser(user.id!);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1797,6 +2329,113 @@ class _ProjectFormDialogState extends State<_ProjectFormDialog> {
                   } else {
                     success = await viewModel.addProject(model);
                   }
+                  setState(() => _isSubmitting = false);
+                  if (success) {
+                    Navigator.pop(context, true);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('İşlem başarısız')));
+                  }
+                },
+          child: Text(isEdit ? 'Güncelle' : 'Ekle'),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdminUserFormDialog extends StatefulWidget {
+  final AdminUserModel? user;
+  const _AdminUserFormDialog({this.user});
+
+  @override
+  State<_AdminUserFormDialog> createState() => _AdminUserFormDialogState();
+}
+
+class _AdminUserFormDialogState extends State<_AdminUserFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _usernameController;
+  late TextEditingController _passwordController;
+  late TextEditingController _roleController;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _usernameController = TextEditingController(text: widget.user?.username ?? '');
+    _passwordController = TextEditingController();
+    _roleController = TextEditingController(text: widget.user?.role ?? 'admin');
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _roleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = Provider.of<AdminUserViewModel>(context, listen: false);
+    final isEdit = widget.user != null;
+    return AlertDialog(
+      title: Text(isEdit ? 'Admin Kullanıcı Düzenle' : 'Yeni Admin Kullanıcı Ekle'),
+      content: SizedBox(
+        width: 400,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _usernameController,
+                decoration: const InputDecoration(labelText: 'Kullanıcı Adı'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Kullanıcı adı zorunlu' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(labelText: isEdit ? 'Şifre (Boş bırakılırsa değişmez)' : 'Şifre'),
+                obscureText: true,
+                validator: (v) {
+                  if (isEdit && (v == null || v.trim().isEmpty)) return null; // Optional for edit
+                  if (v == null || v.trim().isEmpty) return 'Şifre zorunlu';
+                  if (v.trim().length < 6) return 'Şifre en az 6 karakter olmalı';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _roleController,
+                decoration: const InputDecoration(labelText: 'Rol'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Rol zorunlu' : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
+        ElevatedButton(
+          onPressed: _isSubmitting
+              ? null
+              : () async {
+                  if (_formKey.currentState?.validate() != true) return;
+                  setState(() => _isSubmitting = true);
+
+                  final model = CreateAdminUserModel(
+                    username: _usernameController.text.trim(),
+                    password: _passwordController.text.trim(),
+                    role: _roleController.text.trim(),
+                  );
+
+                  bool success;
+                  if (isEdit) {
+                    success = await viewModel.updateAdminUser(widget.user!.id!, model);
+                  } else {
+                    success = await viewModel.createAdminUser(model);
+                  }
+
                   setState(() => _isSubmitting = false);
                   if (success) {
                     Navigator.pop(context, true);

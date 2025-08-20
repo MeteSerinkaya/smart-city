@@ -14,6 +14,9 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+env:
+  FLUTTER_VERSION: '3.28.5'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,23 +31,20 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Install Flutter
-        run: |
-          git clone https://github.com/flutter/flutter.git -b stable
-          export PATH="$PATH:`pwd`/flutter/bin"
-          flutter doctor
-          flutter --version
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+
+      - name: Enable web
+        run: flutter config --enable-web
 
       - name: Get Flutter dependencies
-        run: |
-          export PATH="$PATH:`pwd`/flutter/bin"
-          flutter pub get
+        run: flutter pub get
 
       - name: Build Flutter web app
-        run: |
-          export PATH="$PATH:`pwd`/flutter/bin"
-          flutter build web --release --base-href="/smart-city/"
-
+        run: flutter build web --release --base-href="/smart-city/"
 
       - name: List build directory
         run: ls -la build/web/
@@ -69,3 +69,12 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages
+
+      - name: Notify deployment status
+        run: |
+          if [ "${{ steps.deployment.outcome }}" == "success" ]; then
+            echo "✅ Deployment successful! Your app is available at: ${{ steps.deployment.outputs.page_url }}"
+          else
+            echo "❌ Deployment failed!"
+            exit 1
+          fi

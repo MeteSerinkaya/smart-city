@@ -3,6 +3,7 @@ import 'package:smart_city/view/authentication/test/model/citymodel/city_service
 
 abstract class ICityServiceService {
   Future<List<CityServiceModel>?> fetchCityServices();
+  Future<CityServiceModel?> getCityServiceById(int id);
   Future<CityServiceModel?> addCityService(CityServiceModel model);
   Future<CityServiceModel?> updateCityService(CityServiceModel model);
   Future<bool> deleteCityService(int id);
@@ -19,6 +20,20 @@ class CityServiceService extends ICityServiceService {
       return null;
     } catch (e) {
       print("CityServiceService fetchCityServices error: $e");
+      return null;
+    }
+  }
+
+  @override
+  Future<CityServiceModel?> getCityServiceById(int id) async {
+    try {
+      final response = await NetworkManager.instance.dioGet('cityservices/$id', CityServiceModel());
+      if (response != null && response is CityServiceModel) {
+        return response;
+      }
+      return null;
+    } catch (e) {
+      print("CityServiceService getCityServiceById error: $e");
       return null;
     }
   }

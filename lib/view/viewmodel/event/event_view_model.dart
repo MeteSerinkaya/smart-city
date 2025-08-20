@@ -18,6 +18,9 @@ abstract class _EventViewModelBase with Store {
   List<EventModel>? eventList;
 
   @observable
+  EventModel? singleEvent;
+
+  @observable
   String? errorMessage;
 
   @observable
@@ -54,6 +57,28 @@ abstract class _EventViewModelBase with Store {
   @action
   Future<void> retryFetchEvents() async {
     await fetchEvents();
+  }
+
+  @action
+  Future<void> getEventById(int id) async {
+    isLoading = true;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final event = await _eventRepository.getEventById(id);
+      if (event != null) {
+        singleEvent = event;
+      } else {
+        hasError = true;
+        errorMessage = 'Etkinlik bulunamadı';
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = 'Etkinlik yüklenirken hata oluştu';
+    } finally {
+      isLoading = false;
+    }
   }
 
   @action

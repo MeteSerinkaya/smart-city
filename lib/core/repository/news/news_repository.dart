@@ -3,6 +3,7 @@ import 'package:smart_city/view/authentication/test/model/newsmodel/news_model.d
 
 abstract class INewsRepository {
   Future<List<NewsModel>?> getNews();
+  Future<NewsModel?> getNewsById(int id);
   Future<NewsModel?> addNews(NewsModel model);
   Future<NewsModel?> updateNews(NewsModel model);
   Future<bool> deleteNews(int id);
@@ -16,6 +17,11 @@ class NewsRepository extends INewsRepository {
   @override
   Future<List<NewsModel>?> getNews() async {
     return await _newsService.fetchNews();
+  }
+
+  @override
+  Future<NewsModel?> getNewsById(int id) async {
+    return await _newsService.getNewsById(id);
   }
 
   @override

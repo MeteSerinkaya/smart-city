@@ -3,6 +3,7 @@ import 'package:smart_city/view/authentication/test/model/eventmodel/event_model
 
 abstract class IEventRepository {
   Future<List<EventModel>?> getEvents();
+  Future<EventModel?> getEventById(int id);
   Future<EventModel?> addEvent(EventModel model);
   Future<EventModel?> updateEvent(EventModel model);
   Future<bool> deleteEvent(int id);
@@ -16,6 +17,11 @@ class EventRepository extends IEventRepository {
   @override
   Future<List<EventModel>?> getEvents() async {
     return await _eventService.fetchEvents();
+  }
+
+  @override
+  Future<EventModel?> getEventById(int id) async {
+    return await _eventService.getEventById(id);
   }
 
   @override

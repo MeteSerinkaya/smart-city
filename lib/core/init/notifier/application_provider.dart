@@ -22,6 +22,7 @@ import 'package:smart_city/view/viewmodel/event/event_view_model.dart';
 import 'package:smart_city/view/viewmodel/heroimage/hero_image_view_model.dart';
 import 'package:smart_city/view/viewmodel/news/news_view_model.dart';
 import 'package:smart_city/view/viewmodel/project/project_view_model.dart';
+import 'package:smart_city/view/viewmodel/admin_user/admin_user_view_model.dart';
 
 class ApplicationProvider {
   static final ApplicationProvider _instance = ApplicationProvider._init();
@@ -53,6 +54,7 @@ class ApplicationProvider {
     Provider<NewsViewModel>(create: (context) => NewsViewModel(_instance._newsRepository)),
     Provider<HeroImageViewModel>(create: (context) => HeroImageViewModel(_instance._heroImageRepository, _instance._heroImageService)),
     Provider<ProjectViewModel>(create: (context) => ProjectViewModel(_instance._projectRepository)),
+    Provider<AdminUserViewModel>(create: (context) => AdminUserViewModel()),
   ];
 
   List<SingleChildWidget> uiChangesItems = [];

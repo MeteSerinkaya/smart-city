@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
+import 'dart:html' as html;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:smart_city/view/viewmodel/announcement/announcement_view_model.dart';
 import 'package:smart_city/view/viewmodel/city/city_service_view_model.dart';
 import 'package:smart_city/view/viewmodel/event/event_view_model.dart';
@@ -9,11 +12,13 @@ import 'package:smart_city/view/viewmodel/news/news_view_model.dart';
 import 'package:smart_city/view/viewmodel/project/project_view_model.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smart_city/core/components/app_bar/main_app_bar.dart';
+import 'package:smart_city/core/components/scroll_tracker/scroll_section_tracker.dart';
 import 'package:smart_city/view/view/announcement/announcement_view.dart';
 import 'package:smart_city/view/view/event/event_view.dart';
 import 'package:smart_city/view/view/news/news_view.dart';
 import 'package:smart_city/view/view/city/city_services_view.dart';
 import 'package:smart_city/view/view/project/project_view.dart';
+import 'package:smart_city/view/view/smart_city_info/smart_city_info_view.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:smart_city/view/viewmodel/heroimage/hero_image_view_model.dart';
 import 'package:smart_city/core/components/parallax/parallax_hero.dart';
@@ -21,6 +26,8 @@ import 'package:smart_city/core/components/loading/skeleton_loading.dart';
 import 'package:smart_city/core/components/animations/micro_animations.dart';
 import 'package:smart_city/core/components/lazy_loading/lazy_loading_widget.dart';
 import 'package:smart_city/core/components/performance/memory_manager.dart';
+import 'package:smart_city/core/components/cards/unified_info_card.dart';
+import 'package:smart_city/core/components/particles/particle_background.dart';
 
 // --- ENHANCED ANIMATION WIDGETS ---
 class EnhancedFadeInWidget extends StatefulWidget {
@@ -200,7 +207,7 @@ class AnimatedCounterWidget extends StatefulWidget {
     required this.endValue,
     this.suffix = '',
     this.style,
-    this.duration = const Duration(milliseconds: 2000),
+    this.duration = const Duration(milliseconds: 800),
   });
 
   @override
@@ -217,6 +224,16 @@ class _AnimatedCounterWidgetState extends State<AnimatedCounterWidget> with Sing
     _controller = AnimationController(duration: widget.duration, vsync: this);
     _animation = IntTween(begin: 0, end: widget.endValue).animate(_controller);
     _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(AnimatedCounterWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.endValue != widget.endValue) {
+      _animation = IntTween(begin: oldWidget.endValue, end: widget.endValue).animate(_controller);
+      _controller.reset();
+      _controller.forward();
+    }
   }
 
   @override
@@ -493,15 +510,20 @@ class HomeScreenView extends StatefulWidget {
 
 class _HomeScreenViewState extends State<HomeScreenView> with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _homeKey = GlobalKey();
   final GlobalKey _announcementKey = GlobalKey();
   final GlobalKey _eventKey = GlobalKey();
   final GlobalKey _newsKey = GlobalKey();
   final GlobalKey _cityServiceKey = GlobalKey();
   final GlobalKey _projectKey = GlobalKey();
+  final GlobalKey _smartCityInfoKey = GlobalKey();
 
   // Scroll progress tracking
   double _scrollProgress = 0.0;
   bool _showFixedAppBar = false;
+
+  // Active navigation item
+  String _activeNavigationItem = 'Ana Sayfa';
 
   @override
   bool get wantKeepAlive => true;
@@ -510,8 +532,9 @@ class _HomeScreenViewState extends State<HomeScreenView> with AutomaticKeepAlive
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // Verileri hemen yükle
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _precacheImages();
+      _loadData();
     });
   }
 
@@ -527,20 +550,60 @@ class _HomeScreenViewState extends State<HomeScreenView> with AutomaticKeepAlive
       final maxScroll = _scrollController.position.maxScrollExtent;
       final currentScroll = _scrollController.position.pixels;
 
-      // Calculate progress based on total scrollable content
-      // This makes the progress more sensitive and shows progress even on hero section
-      final totalHeight = _scrollController.position.viewportDimension + maxScroll;
-      final progress = totalHeight > 0 ? currentScroll / totalHeight : 0.0;
+      // Calculate progress based on max scroll extent
+      // This ensures the progress bar fills completely when scrolled to bottom
+      final progress = maxScroll > 0 ? currentScroll / maxScroll : 0.0;
 
       // Show fixed AppBar when user scrolls past hero section (600px height)
       // Changed to show immediately when scrolling starts
       final showFixedAppBar = currentScroll > 0;
 
+      // Scroll-based navigation logic (dynamic tracking with hysteresis)
+      print('HomeView - Current Scroll Position: $currentScroll');
+      final tracker = ScrollSectionTracker(
+        scrollController: _scrollController,
+        sectionsInOrder: [
+          SectionRef(label: 'Ana Sayfa', key: _homeKey),
+          SectionRef(label: 'Duyurular', key: _announcementKey),
+          SectionRef(label: 'Etkinlikler', key: _eventKey),
+          SectionRef(label: 'Haberler', key: _newsKey),
+          SectionRef(label: 'Şehir Hizmetleri', key: _cityServiceKey),
+          SectionRef(label: 'Projeler', key: _projectKey),
+          SectionRef(label: 'Akıllı Şehir Nedir?', key: _smartCityInfoKey),
+        ],
+      );
+      final String newActiveItem = tracker.computeActiveLabelWithHysteresis(
+        _activeNavigationItem,
+        viewportBias: 0.35,
+        hysteresisPx: 120,
+      );
+
       setState(() {
         _scrollProgress = progress.clamp(0.0, 1.0);
         _showFixedAppBar = showFixedAppBar;
+        _activeNavigationItem = newActiveItem;
       });
+
+      // Debug için aktif item değişikliğini yazdır
+      if (newActiveItem != _activeNavigationItem) {
+        print('HomeView - Active Item Changed: $_activeNavigationItem -> $newActiveItem at position: $currentScroll');
+      }
     }
+  }
+
+  void _loadData() {
+    // Verileri hemen yükle
+    final announcementViewModel = Provider.of<AnnouncementViewModel>(context, listen: false);
+    final eventViewModel = Provider.of<EventViewModel>(context, listen: false);
+    final newsViewModel = Provider.of<NewsViewModel>(context, listen: false);
+    final cityServiceViewModel = Provider.of<CityServiceViewModel>(context, listen: false);
+    final projectViewModel = Provider.of<ProjectViewModel>(context, listen: false);
+
+    announcementViewModel.fetchAnnouncement();
+    eventViewModel.fetchEvents();
+    newsViewModel.fetchNews();
+    cityServiceViewModel.fetchCityService();
+    projectViewModel.fetchProjects();
   }
 
   void _precacheImages() {
@@ -550,21 +613,6 @@ class _HomeScreenViewState extends State<HomeScreenView> with AutomaticKeepAlive
       ),
       context,
     );
-
-    // Load data for all sections
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final announcementViewModel = Provider.of<AnnouncementViewModel>(context, listen: false);
-      final eventViewModel = Provider.of<EventViewModel>(context, listen: false);
-      final newsViewModel = Provider.of<NewsViewModel>(context, listen: false);
-      final cityServiceViewModel = Provider.of<CityServiceViewModel>(context, listen: false);
-      final projectViewModel = Provider.of<ProjectViewModel>(context, listen: false);
-
-      announcementViewModel.fetchAnnouncement();
-      eventViewModel.fetchEvents();
-      newsViewModel.fetchNews();
-      cityServiceViewModel.fetchCityService();
-      projectViewModel.fetchProjects();
-    });
   }
 
   void _scrollToSection(GlobalKey key) {
@@ -591,38 +639,34 @@ class _HomeScreenViewState extends State<HomeScreenView> with AutomaticKeepAlive
                   controller: _scrollController,
                   child: Column(
                     children: [
-                      _HeroSectionWithAppBarWidget(
-                        onNavTap: (label) {
-                          if (label == 'Ana Sayfa') {
-                            // Ana sayfa için en başa dön
-                            _scrollController.animateTo(
-                              0,
-                              duration: const Duration(milliseconds: 700),
-                              curve: Curves.easeInOutQuart,
-                            );
-                          } else if (label == 'Duyurular') {
-                            _scrollToSection(_announcementKey);
-                          } else if (label == 'Etkinlikler') {
-                            _scrollToSection(_eventKey);
-                          } else if (label == 'Haberler') {
-                            _scrollToSection(_newsKey);
-                          } else if (label == 'Şehir Hizmetleri') {
-                            _scrollToSection(_cityServiceKey);
-                          } else if (label == 'Projeler') {
-                            _scrollToSection(_projectKey);
-                          }
-                        },
-                        scrollProgress: _scrollProgress,
-                        scrollController: _scrollController,
+                      Container(
+                        key: _homeKey,
+                        child: _HeroSectionWithAppBarWidget(
+                          onNavTap: (label) {
+                            if (label == 'Ana Sayfa') {
+                              // Ana sayfa için en başa dön
+                              _scrollController.animateTo(
+                                0,
+                                duration: const Duration(milliseconds: 700),
+                                curve: Curves.easeInOutQuart,
+                              );
+                            } else if (label == 'Duyurular') {
+                              _scrollToSection(_announcementKey);
+                            } else if (label == 'Etkinlikler') {
+                              _scrollToSection(_eventKey);
+                            } else if (label == 'Haberler') {
+                              _scrollToSection(_newsKey);
+                            } else if (label == 'Şehir Hizmetleri') {
+                              _scrollToSection(_cityServiceKey);
+                            } else if (label == 'Projeler') {
+                              _scrollToSection(_projectKey);
+                            }
+                          },
+                          scrollProgress: _scrollProgress,
+                          scrollController: _scrollController,
+                        ),
                       ),
-                      LazyLoadingWidget(
-                        delay: const Duration(milliseconds: 200),
-                        child: const _StatisticsSectionWidget(),
-                      ),
-                      LazyLoadingWidget(
-                        delay: const Duration(milliseconds: 400),
-                        child: const _PartnersSectionWidget(),
-                      ),
+                      _StatisticsSectionWidget(),
                       LazyLoadingWidget(
                         delay: const Duration(milliseconds: 600),
                         child: _NavigationSectionWidget(
@@ -631,20 +675,20 @@ class _HomeScreenViewState extends State<HomeScreenView> with AutomaticKeepAlive
                           newsKey: _newsKey,
                           cityServiceKey: _cityServiceKey,
                           projectKey: _projectKey,
+                          smartCityInfoKey: _smartCityInfoKey,
                           scrollToSection: _scrollToSection,
                         ),
                       ),
-                      LazyLoadingWidget(
-                        delay: const Duration(milliseconds: 800),
-                        child: _ContentSectionsWidget(
-                          announcementKey: _announcementKey,
-                          eventKey: _eventKey,
-                          newsKey: _newsKey,
-                          cityServiceKey: _cityServiceKey,
-                          projectKey: _projectKey,
-                        ),
+                      _ContentSectionsWidget(
+                        announcementKey: _announcementKey,
+                        eventKey: _eventKey,
+                        newsKey: _newsKey,
+                        cityServiceKey: _cityServiceKey,
+                        projectKey: _projectKey,
+                        smartCityInfoKey: _smartCityInfoKey,
                       ),
-                      LazyLoadingWidget(delay: const Duration(milliseconds: 1000), child: const _FooterWidget()),
+                      const _PartnersSectionWidget(),
+                      const _FooterWidget(),
                     ],
                   ),
                 ),
@@ -657,6 +701,8 @@ class _HomeScreenViewState extends State<HomeScreenView> with AutomaticKeepAlive
                 child: MainAppBar(
                   scrollController: _scrollController,
                   scrollProgress: _scrollProgress,
+                  activeItemOverride: _activeNavigationItem,
+                  showOnlyActiveItem: false,
                   onNavTap: (label) {
                     if (label == 'Ana Sayfa') {
                       // Ana sayfa için en başa dön
@@ -675,6 +721,8 @@ class _HomeScreenViewState extends State<HomeScreenView> with AutomaticKeepAlive
                       _scrollToSection(_cityServiceKey);
                     } else if (label == 'Projeler') {
                       _scrollToSection(_projectKey);
+                    } else if (label == 'Akıllı Şehir Nedir?') {
+                      _scrollToSection(_smartCityInfoKey);
                     }
                   },
                 ),
@@ -1021,17 +1069,7 @@ class _HeroButtonWidget extends StatelessWidget {
       scale: 1.08,
       glowColor: const Color(0xFF0A4A9D),
       child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0A4A9D).withOpacity(0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-              spreadRadius: 2,
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
         child: ElevatedButton(
           onPressed: () {
             // TODO: Implement hero button action
@@ -1043,11 +1081,14 @@ class _HeroButtonWidget extends StatelessWidget {
             );
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0A4A9D),
+            backgroundColor: Colors.transparent,
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Colors.white, width: 2),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1073,6 +1114,22 @@ class _HeroButtonWidget extends StatelessWidget {
 class _StatisticsSectionWidget extends StatelessWidget {
   const _StatisticsSectionWidget();
 
+  // Random sayı üretme method'u
+  int _getRandomCount(int min, int max) {
+    final random = Random();
+    return min + random.nextInt(max - min + 1);
+  }
+
+  // Veri sayısını al veya fallback random sayı göster
+  int _getCount(List? dataList, bool isLoading, int min, int max) {
+    // Eğer veri varsa ve loading değilse gerçek sayıyı döndür
+    if (dataList != null && dataList.isNotEmpty && !isLoading) {
+      return dataList.length;
+    }
+    // Eğer loading ise veya veri yoksa random sayı döndür
+    return _getRandomCount(min, max);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -1080,70 +1137,223 @@ class _StatisticsSectionWidget extends StatelessWidget {
         final isMobile = constraints.maxWidth < 768;
 
         return Container(
-          padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 64, vertical: isMobile ? 32 : 80),
-          child: Column(
+          width: double.infinity,
+          height: isMobile ? 600 : 800,
+          color: Colors.white,
+          child: Stack(
             children: [
-              const Text(
-                'Şehir İstatistikleri',
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
+              // Arka plan resmi - tüm alanı kaplıyor
+              Positioned.fill(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(image: AssetImage('asset/image/6256458.jpg'), fit: BoxFit.cover),
+                  ),
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Erzurum\'un dijital dönüşümünü rakamlarla takip edin',
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 18,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xB31F2937),
+              // Ana içerik
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withOpacity(0.9),
+                      Colors.white.withOpacity(0.7),
+                      Colors.white.withOpacity(0.5),
+                    ],
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 64),
-              Wrap(
-                spacing: 24,
-                runSpacing: 24,
-                alignment: WrapAlignment.center,
-                children: const [
-                  _StatCardWidget(
-                    icon: 'asset/icons/megaphone.png',
-                    title: 'Aktif Duyuru',
-                    value: '12',
-                    subtitle: 'Güncel',
-                    color: Color(0xFF0A4A9D),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 64, vertical: isMobile ? 32 : 80),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'ŞEHİR İSTATİSTİKLERİ',
+                        style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontSize: 36,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1F2937),
+                          letterSpacing: 2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Erzurum\'un dijital dönüşümünü rakamlarla takip edin',
+                        style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF374151),
+                          letterSpacing: 1,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 64),
+                      Consumer<AnnouncementViewModel>(
+                        builder: (context, announcementViewModel, child) {
+                          return Consumer<EventViewModel>(
+                            builder: (context, eventViewModel, child) {
+                              return Consumer<NewsViewModel>(
+                                builder: (context, newsViewModel, child) {
+                                  return Consumer<CityServiceViewModel>(
+                                    builder: (context, cityServiceViewModel, child) {
+                                      return Consumer<ProjectViewModel>(
+                                        builder: (context, projectViewModel, child) {
+                                          // Gerçek verileri al veya fallback random sayılar göster
+                                          final announcementCount = _getCount(
+                                            announcementViewModel.announcementList,
+                                            announcementViewModel.isLoading,
+                                            8,
+                                            15,
+                                          );
+                                          final eventCount = _getCount(
+                                            eventViewModel.eventList,
+                                            eventViewModel.isLoading,
+                                            6,
+                                            12,
+                                          );
+                                          final newsCount = _getCount(
+                                            newsViewModel.newsList,
+                                            newsViewModel.isLoading,
+                                            10,
+                                            20,
+                                          );
+                                          final cityServiceCount = _getCount(
+                                            cityServiceViewModel.cityServiceList,
+                                            cityServiceViewModel.isLoading,
+                                            15,
+                                            25,
+                                          );
+                                          final projectCount = _getCount(
+                                            projectViewModel.projectList,
+                                            projectViewModel.isLoading,
+                                            5,
+                                            10,
+                                          );
+
+                                          return Column(
+                                            children: [
+                                              // İlk satır - 3 istatistik
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                children: [
+                                                  _NewStatItem(
+                                                    icon: 'asset/icons/remove.png',
+                                                    title: 'AKTİF DUYURU',
+                                                    value: announcementCount,
+                                                    color: const Color(0xFF0A4A9D),
+                                                  ),
+                                                  _NewStatItem(
+                                                    icon: 'asset/icons/remove.png',
+                                                    title: 'YAKLAŞAN ETKİNLİK',
+                                                    value: eventCount,
+                                                    color: const Color(0xFF00A8E8),
+                                                  ),
+                                                  _NewStatItem(
+                                                    icon: 'asset/icons/remove.png',
+                                                    title: 'GÜNCEL HABER',
+                                                    value: newsCount,
+                                                    color: const Color(0xFF10B981),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 40),
+                                              // İkinci satır - 2 istatistik
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                                children: [
+                                                  _NewStatItem(
+                                                    icon: 'asset/icons/remove.png',
+                                                    title: 'ŞEHİR HİZMETLERİ',
+                                                    value: cityServiceCount,
+                                                    color: const Color(0xFF8B5CF6),
+                                                  ),
+                                                  _NewStatItem(
+                                                    icon: 'asset/icons/remove.png',
+                                                    title: 'AKTİF PROJE',
+                                                    value: projectCount,
+                                                    color: const Color(0xFFF59E0B),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                  _StatCardWidget(
-                    icon: 'asset/icons/calendar.png',
-                    title: 'Yaklaşan Etkinlik',
-                    value: '8',
-                    subtitle: 'Bu ay',
-                    color: Color(0xFF00A8E8),
-                  ),
-                  _StatCardWidget(
-                    icon: 'asset/icons/newspaper-folded.png',
-                    title: 'Güncel Haber',
-                    value: '15',
-                    subtitle: 'Bu hafta',
-                    color: Color(0xFF10B981),
-                  ),
-                  _StatCardWidget(
-                    icon: 'asset/icons/group.png',
-                    title: 'Aktif Kullanıcı',
-                    value: '2.5K',
-                    subtitle: 'Günlük',
-                    color: Color(0xFF8B5CF6),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _NewStatItem extends StatelessWidget {
+  final String icon;
+  final String title;
+  final int value;
+  final Color color;
+
+  const _NewStatItem({required this.icon, required this.title, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Icon ve sayı
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(icon, width: 24, height: 24, color: color),
+            const SizedBox(width: 12),
+            AnimatedCounterWidget(
+              endValue: value,
+              suffix: '',
+              style: TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 48,
+                fontWeight: FontWeight.w800,
+                color: color,
+                height: 1.0,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Başlık
+        Text(
+          title,
+          style: TextStyle(
+            fontFamily: 'Roboto',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F2937),
+            letterSpacing: 1,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+        // Renkli çizgi
+        Container(
+          width: 40,
+          height: 2,
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(1)),
+        ),
+      ],
     );
   }
 }
@@ -1201,8 +1411,8 @@ class _StatCardWidget extends StatelessWidget {
                   const SizedBox(height: 28),
                   // Animated Counter for Value
                   AnimatedCounterWidget(
-                    endValue: int.tryParse(value.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
-                    suffix: value.replaceAll(RegExp(r'[0-9]'), ''),
+                    endValue: int.tryParse(value) ?? 0,
+                    suffix: '',
                     style: TextStyle(
                       fontFamily: 'Roboto',
                       fontSize: 42,
@@ -1327,7 +1537,34 @@ class _ApplicationsSectionWidget extends StatelessWidget {
                           itemCount: cityServices.length,
                           itemBuilder: (context, index) {
                             final service = cityServices[index];
-                            return RepaintBoundary(child: CityServiceCardWidget(service: service));
+                            return UnifiedInfoCard(
+                              imageUrl: service.iconUrl,
+                              fallbackIcon: Icons.apps,
+                              title: service.title ?? 'Başlıksız',
+                              description: service.description,
+                              bottomRowChildren: const [
+                                Icon(Icons.access_time, size: 12, color: Color(0xFF7AA2D6)),
+                                SizedBox(width: 4),
+                                Text(
+                                  '7/24',
+                                  style: TextStyle(color: Color(0xFF7AA2D6), fontSize: 12, fontWeight: FontWeight.w500),
+                                ),
+                                SizedBox(width: 12),
+                                Icon(Icons.public, size: 12, color: Color(0xFF7AA2D6)),
+                                SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    'Çevrim içi',
+                                    style: TextStyle(
+                                      color: Color(0xFF7AA2D6),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            );
                           },
                         ),
                     ],
@@ -1348,18 +1585,10 @@ class _PartnersSectionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<PartnerItem> partners = [
-      PartnerItem(
-        name: 'Erzurum Ticaret ve Sanayi Odası',
-        logoUrl: 'asset/paydas/ticaret.jpeg',
-      ),
-      PartnerItem(
-        name: 'Atatürk Üniversitesi',
-        logoUrl: 'asset/paydas/Ataturkuni_logo.png',
-      ),
-      PartnerItem(
-        name: 'Erzurum Teknik Üniversitesi',
-        logoUrl: 'asset/paydas/etu.png',
-      ),
+      PartnerItem(name: 'Erzurum Ticaret ve Sanayi Odası', logoUrl: 'asset/paydas/ticaret.jpeg'),
+      PartnerItem(name: 'Atatürk Üniversitesi', logoUrl: 'asset/paydas/Ataturkuni_logo.png'),
+      PartnerItem(name: 'Erzurum Teknik Üniversitesi', logoUrl: 'asset/paydas/etu.png'),
+      PartnerItem(name: 'Türkiye Tekneloji Takımı', logoUrl: 'asset/paydas/ttv.png'),
     ];
 
     return LayoutBuilder(
@@ -1372,51 +1601,68 @@ class _PartnersSectionWidget extends StatelessWidget {
         }
         return Container(
           color: const Color(0xFF2C2C2C), // Changed to #2c2c2c
-          padding: EdgeInsets.symmetric(
-            horizontal: constraints.maxWidth < 600 ? 12 : 64,
-            vertical: constraints.maxWidth < 600 ? 32 : 80,
-          ),
-          child: Column(
+          child: Stack(
             children: [
-              Text(
-                'Paydaşlar',
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: constraints.maxWidth < 600 ? 22 : 36,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white, // Changed to white for better contrast
+              // Parçacık animasyonu arka planda
+              Positioned.fill(
+                child: ParticleBackground(
+                  particleColor: Colors.white,
+                  particleCount: constraints.maxWidth < 600 ? 20 : 35,
+                  speed: 0.15,
+                  opacity: 0.1,
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Akıllı şehir projemizin değerli iş ortakları',
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: constraints.maxWidth < 600 ? 14 : 18,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white.withOpacity(0.7), // Changed for better contrast
+
+              // Ana içerik
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: constraints.maxWidth < 600 ? 12 : 64,
+                  vertical: constraints.maxWidth < 600 ? 32 : 80,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 64),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return CarouselSlider(
-                    options: CarouselOptions(
-                      height: 160,
-                      autoPlay: true,
-                      autoPlayInterval: const Duration(seconds: 2),
-                      viewportFraction: viewportFraction,
-                      enlargeCenterPage: false,
-                      enableInfiniteScroll: true,
-                      scrollDirection: Axis.horizontal,
+                child: Column(
+                  children: [
+                    Text(
+                      'Paydaşlar',
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: constraints.maxWidth < 600 ? 22 : 36,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white, // Changed to white for better contrast
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    items: partners.map((partner) {
-                      return Center(child: _buildPartnerLogoCard(partner));
-                    }).toList(),
-                  );
-                },
+                    const SizedBox(height: 16),
+                    Text(
+                      'Akıllı şehir projemizin değerli iş ortakları',
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: constraints.maxWidth < 600 ? 14 : 18,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withOpacity(0.7), // Changed for better contrast
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 64),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return CarouselSlider(
+                          options: CarouselOptions(
+                            height: 160,
+                            autoPlay: true,
+                            autoPlayInterval: const Duration(seconds: 2),
+                            viewportFraction: viewportFraction,
+                            enlargeCenterPage: false,
+                            enableInfiniteScroll: true,
+                            scrollDirection: Axis.horizontal,
+                          ),
+                          items: partners.map((partner) {
+                            return Center(child: _buildPartnerLogoCard(partner));
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1528,8 +1774,9 @@ class _AnnouncementsSectionWidget extends StatelessWidget {
       builder: (context, constraints) {
         return Container(
           color: const Color(0xFF2C2C2C), // Full width dark background
+          width: double.infinity, // Full width
           padding: EdgeInsets.symmetric(
-            horizontal: constraints.maxWidth < 600 ? 12 : 64,
+            horizontal: constraints.maxWidth < 600 ? 12 : 32,
             vertical: constraints.maxWidth < 600 ? 32 : 80,
           ),
           child: Column(
@@ -1544,12 +1791,20 @@ class _AnnouncementsSectionWidget extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
-              // Duyuru içeriği buraya gelecek
-              Container(
-                padding: const EdgeInsets.all(24),
-                child: const AnnouncementView(),
+              const SizedBox(height: 16),
+              Text(
+                'Önemli duyurular ve güncellemeler',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: constraints.maxWidth < 600 ? 14 : 18,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white.withOpacity(0.7), // Changed for better contrast
+                ),
+                textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 64),
+              // Duyuru içeriği buraya gelecek
+              const AnnouncementView(),
             ],
           ),
         );
@@ -1567,8 +1822,9 @@ class _NewsSectionWidget extends StatelessWidget {
       builder: (context, constraints) {
         return Container(
           color: const Color(0xFF2C2C2C), // Full width dark background
+          width: double.infinity, // Full width
           padding: EdgeInsets.symmetric(
-            horizontal: constraints.maxWidth < 600 ? 12 : 64,
+            horizontal: constraints.maxWidth < 600 ? 8 : 16,
             vertical: constraints.maxWidth < 600 ? 32 : 80,
           ),
           child: Column(
@@ -1583,12 +1839,20 @@ class _NewsSectionWidget extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
-              // Haber içeriği buraya gelecek
-              Container(
-                padding: const EdgeInsets.all(24),
-                child: const NewsView(),
+              const SizedBox(height: 16),
+              Text(
+                'Güncel haberler ve gelişmeler',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: constraints.maxWidth < 600 ? 14 : 18,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white.withOpacity(0.7), // Changed for better contrast
+                ),
+                textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 64),
+              // Haber içeriği buraya gelecek
+              const NewsView(),
             ],
           ),
         );
@@ -1606,8 +1870,9 @@ class _ProjectsSectionWidget extends StatelessWidget {
       builder: (context, constraints) {
         return Container(
           color: const Color(0xFF2C2C2C), // Full width dark background
+          width: double.infinity, // Full width
           padding: EdgeInsets.symmetric(
-            horizontal: constraints.maxWidth < 600 ? 12 : 64,
+            horizontal: constraints.maxWidth < 600 ? 12 : 32,
             vertical: constraints.maxWidth < 600 ? 32 : 80,
           ),
           child: Column(
@@ -1622,12 +1887,96 @@ class _ProjectsSectionWidget extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
-              // Proje içeriği buraya gelecek
-              Container(
-                padding: const EdgeInsets.all(24),
-                child: const ProjectView(),
+              const SizedBox(height: 16),
+              Text(
+                'Şehrimizin gelişim projeleri',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: constraints.maxWidth < 600 ? 14 : 18,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white.withOpacity(0.7), // Changed for better contrast
+                ),
+                textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 64),
+              // Proje içeriği buraya gelecek
+              const ProjectView(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _EventsSectionWidget extends StatelessWidget {
+  const _EventsSectionWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          color: Colors.white, // Full width white background
+          width: double.infinity, // Full width
+          padding: EdgeInsets.symmetric(
+            horizontal: constraints.maxWidth < 600 ? 12 : 32,
+            vertical: constraints.maxWidth < 600 ? 16 : 40, // Reduced padding
+          ),
+          child: Column(
+            children: [
+              // Başlık - Moved up with less spacing
+              Text(
+                'ETKİNLİKLER',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: constraints.maxWidth < 600 ? 22 : 36,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onSurfaceColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16), // Reduced spacing
+              // Etkinlik içeriği buraya gelecek
+              EventView(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CityServicesSectionWidget extends StatelessWidget {
+  const _CityServicesSectionWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Container(
+          color: Colors.white, // Full width white background
+          width: double.infinity, // Full width
+          padding: EdgeInsets.symmetric(
+            horizontal: constraints.maxWidth < 600 ? 12 : 32,
+            vertical: constraints.maxWidth < 600 ? 16 : 40, // Reduced padding
+          ),
+          child: Column(
+            children: [
+              // Başlık - Moved up with less spacing
+              Text(
+                'ŞEHİR HİZMETLERİ',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: constraints.maxWidth < 600 ? 22 : 36,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.onSurfaceColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16), // Reduced spacing
+              // Şehir hizmetleri içeriği buraya gelecek
+              const CityServicesView(),
             ],
           ),
         );
@@ -1642,6 +1991,7 @@ class _NavigationSectionWidget extends StatelessWidget {
   final GlobalKey newsKey;
   final GlobalKey cityServiceKey;
   final GlobalKey projectKey;
+  final GlobalKey smartCityInfoKey;
   final void Function(GlobalKey) scrollToSection;
 
   const _NavigationSectionWidget({
@@ -1650,6 +2000,7 @@ class _NavigationSectionWidget extends StatelessWidget {
     required this.newsKey,
     required this.cityServiceKey,
     required this.projectKey,
+    required this.smartCityInfoKey,
     required this.scrollToSection,
   });
 
@@ -1714,7 +2065,7 @@ class _NavigationSectionWidget extends StatelessWidget {
                           icon: 'asset/icons/calendar.png',
                           title: 'Etkinlikler',
                           subtitle: 'Şehir etkinliklerini ve organizasyonları keşfedin',
-                          color: AppColors.secondaryColor,
+                          color: AppColors.primaryColor,
                           onTap: () => _openDetailPage(context, '/events-detail'),
                           isMobile: isMobile,
                         ),
@@ -1726,7 +2077,7 @@ class _NavigationSectionWidget extends StatelessWidget {
                           icon: 'asset/icons/newspaper-folded.png',
                           title: 'Haberler',
                           subtitle: 'Güncel haberleri ve gelişmeleri okuyun',
-                          color: const Color(0xFF10B981),
+                          color: AppColors.primaryColor,
                           onTap: () => _openDetailPage(context, '/news-detail'),
                           isMobile: isMobile,
                         ),
@@ -1738,7 +2089,7 @@ class _NavigationSectionWidget extends StatelessWidget {
                           icon: 'asset/icons/company.png',
                           title: 'Şehir Hizmetleri',
                           subtitle: 'Şehir hayatını kolaylaştıran akıllı hizmetler',
-                          color: const Color(0xFF8B5CF6),
+                          color: AppColors.primaryColor,
                           onTap: () => _openDetailPage(context, '/city-services-detail'),
                           isMobile: isMobile,
                         ),
@@ -1750,7 +2101,7 @@ class _NavigationSectionWidget extends StatelessWidget {
                           icon: 'asset/icons/project-management.png',
                           title: 'Projeler',
                           subtitle: 'Şehrimizin gelişim projeleri',
-                          color: const Color(0xFFF59E0B),
+                          color: AppColors.primaryColor,
                           onTap: () => _openDetailPage(context, '/projects-detail'),
                           isMobile: isMobile,
                         ),
@@ -1890,6 +2241,7 @@ class _ContentSectionsWidget extends StatefulWidget {
   final GlobalKey newsKey;
   final GlobalKey cityServiceKey;
   final GlobalKey projectKey;
+  final GlobalKey smartCityInfoKey;
 
   const _ContentSectionsWidget({
     required this.announcementKey,
@@ -1897,6 +2249,7 @@ class _ContentSectionsWidget extends StatefulWidget {
     required this.newsKey,
     required this.cityServiceKey,
     required this.projectKey,
+    required this.smartCityInfoKey,
   });
 
   @override
@@ -1908,54 +2261,26 @@ class _ContentSectionsWidgetState extends State<_ContentSectionsWidget> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: constraints.maxWidth < 600 ? 12 : 64,
-            vertical: constraints.maxWidth < 600 ? 32 : 80,
-          ),
-          child: Column(
-            children: [
-              _buildContentSection(
-                key: widget.announcementKey,
-                icon: 'asset/icons/megaphone.png',
-                title: 'Duyurular',
-                color: AppColors.onSurfaceColor,
-                child: const _AnnouncementsSectionWidget(),
-              ),
-              const SizedBox(height: 80),
-              _buildContentSection(
-                key: widget.eventKey,
-                icon: 'asset/icons/calendar.png',
-                title: 'Etkinlikler',
-                color: AppColors.secondaryColor,
-                child: EventView(),
-              ),
-              const SizedBox(height: 80),
-              _buildDarkContentSection(
-                key: widget.newsKey,
-                icon: 'asset/icons/newspaper-folded.png',
-                title: 'Haberler',
-                color: const Color(0xFF10B981),
-                child: const _NewsSectionWidget(),
-              ),
-              const SizedBox(height: 80),
-              _buildContentSection(
-                key: widget.cityServiceKey,
-                icon: 'asset/icons/company.png',
-                title: 'Şehir Hizmetleri',
-                color: const Color(0xFF8B5CF6),
-                child: const CityServicesView(),
-              ),
-              const SizedBox(height: 80),
-              _buildDarkContentSection(
-                key: widget.projectKey,
-                icon: 'asset/icons/project-management.png',
-                title: 'Projeler',
-                color: const Color(0xFFF59E0B),
-                child: const _ProjectsSectionWidget(),
-              ),
-            ],
-          ),
+        return Column(
+          children: [
+            // Announcements section - FULL WIDTH (no padding)
+            Container(key: widget.announcementKey, child: const _AnnouncementsSectionWidget()),
+            const SizedBox(height: 80),
+            // Events section - FULL WIDTH (no padding)
+            Container(key: widget.eventKey, child: const _EventsSectionWidget()),
+            const SizedBox(height: 80),
+            // News section - FULL WIDTH (no padding)
+            Container(key: widget.newsKey, child: const _NewsSectionWidget()),
+            const SizedBox(height: 80),
+            // City Services section - FULL WIDTH (no padding)
+            Container(key: widget.cityServiceKey, child: const _CityServicesSectionWidget()),
+            const SizedBox(height: 80),
+            // Projects section - FULL WIDTH (no padding)
+            Container(key: widget.projectKey, child: const _ProjectsSectionWidget()),
+            const SizedBox(height: 80),
+            // Smart City Info section - FULL WIDTH (no padding)
+            Container(key: widget.smartCityInfoKey, child: const SmartCityInfoView()),
+          ],
         );
       },
     );
@@ -2175,15 +2500,16 @@ class _FooterWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final links = ['Hakkımızda', 'İletişim', 'SSS'];
-    final legal = ['Gizlilik Politikası', 'Çerez Politikası', 'Kullanım Şartları'];
     final contact = ['erzurumbuyuksehirbelediyesi@hs01.kep.tr', 'Tel: 0(442) 344 10 00', 'Erzurum, Türkiye'];
     final socialIcons = [
-      {'icon': FontAwesomeIcons.facebookF, 'url': 'https://facebook.com'},
-      {'icon': FontAwesomeIcons.twitter, 'url': 'https://twitter.com'},
-      {'icon': FontAwesomeIcons.instagram, 'url': 'https://instagram.com'},
-      {'icon': FontAwesomeIcons.linkedinIn, 'url': 'https://linkedin.com'},
-      {'icon': FontAwesomeIcons.youtube, 'url': 'https://youtube.com'},
+      {'icon': FontAwesomeIcons.facebookF, 'url': 'https://www.facebook.com/erzurumbld/?locale=tr_TR'},
+      {
+        'icon': FontAwesomeIcons.twitter,
+        'url': 'https://x.com/erzurumbld?ref_src=twsrc%5Egoogle%7Ctwcamp%5Eserp%7Ctwgr%5Eauthor',
+      },
+      {'icon': FontAwesomeIcons.instagram, 'url': 'https://www.instagram.com/erzurumbld/?hl=tr'},
+      {'icon': FontAwesomeIcons.linkedinIn, 'url': 'https://tr.linkedin.com/company/erzurumbuyuksehirbelediyesi'},
+      {'icon': FontAwesomeIcons.youtube, 'url': 'https://www.youtube.com/c/erzurumbuyuksehirbelediyesi'},
     ];
 
     return LayoutBuilder(
@@ -2205,8 +2531,8 @@ class _FooterWidget extends StatelessWidget {
                 child: Container(
                   decoration: const BoxDecoration(
                     image: DecorationImage(
-                      image: AssetImage('asset/image/News_12032025073722.png'),
-                      fit: BoxFit.cover,
+                      image: AssetImage('asset/image/aiimage4.jpg'),
+                      fit: BoxFit.fill,
                       alignment: Alignment.center,
                       opacity: 1.0, // Tam görünür çizim efekti
                     ),
@@ -2239,9 +2565,49 @@ class _FooterWidget extends StatelessWidget {
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _buildFooterColumn('Bağlantılar', links, titleFont, itemFont),
-                              const SizedBox(height: 32),
-                              _buildFooterColumn('Yasal', legal, titleFont, itemFont),
+                              // Mobile'da logolar üstte
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.asset(
+                                        'asset/image/images.png',
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.asset(
+                                        'asset/image/akillisehir.png',
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 32),
                               _buildFooterColumn('İletişim', contact, titleFont, itemFont, isContact: true),
                               const SizedBox(height: 32),
@@ -2251,11 +2617,61 @@ class _FooterWidget extends StatelessWidget {
                         : Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(child: _buildFooterColumn('Bağlantılar', links, titleFont, itemFont)),
-                              Expanded(child: _buildFooterColumn('Yasal', legal, titleFont, itemFont)),
+                              // Sol: Logolar
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          width: 100,
+                                          height: 100,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Image.asset(
+                                              'asset/image/images.png',
+                                              width: 60,
+                                              height: 60,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 20),
+                                        Container(
+                                          width: 100,
+                                          height: 100,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Image.asset(
+                                              'asset/image/akillisehir.png',
+                                              width: 60,
+                                              height: 60,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Orta: İletişim
                               Expanded(
                                 child: _buildFooterColumn('İletişim', contact, titleFont, itemFont, isContact: true),
                               ),
+                              // Sağ: Sosyal Medya
                               Expanded(child: _buildFooterSocial(socialIcons)),
                             ],
                           ),
@@ -2264,7 +2680,7 @@ class _FooterWidget extends StatelessWidget {
                     const SizedBox(height: 24),
                     Center(
                       child: Text(
-                        '© 2024 Erzurum Akıllı Şehir. Tüm hakları saklıdır.',
+                        '© 2025 Erzurum Akıllı Şehir. Tüm hakları saklıdır.',
                         style: TextStyle(
                           fontFamily: 'Roboto',
                           fontSize: itemFont,
@@ -2350,7 +2766,19 @@ class _FooterWidget extends StatelessWidget {
               padding: const EdgeInsets.only(right: 16),
               child: InkWell(
                 onTap: () {
-                  // TODO: Sosyal medya linkine yönlendirme
+                  final url = iconData['url'] as String;
+                  try {
+                    // Web platformunda html.window.open kullan
+                    html.window.open(url, '_blank');
+                  } catch (e) {
+                    // Mobil platformlarda url_launcher kullan
+                    try {
+                      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                    } catch (e) {
+                      // Hata durumunda console'a log
+                      print('URL açılamadı: $url');
+                    }
+                  }
                 },
                 borderRadius: const BorderRadius.all(Radius.circular(24)),
                 child: Container(
@@ -2427,6 +2855,8 @@ class _FixedAppBarWidget extends StatelessWidget {
                             isTablet: MediaQuery.of(context).size.width < 1024,
                             onNavTap: onNavTap,
                             isTransparent: false,
+                            activeItem: 'Ana Sayfa', // Default active item for fixed app bar
+                            showOnlyActiveItem: false,
                           ),
                         ),
 

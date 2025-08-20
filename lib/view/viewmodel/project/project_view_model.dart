@@ -18,6 +18,9 @@ abstract class _ProjectViewModelBase with Store {
   List<ProjectModel>? projectList;
 
   @observable
+  ProjectModel? singleProject;
+
+  @observable
   String? errorMessage;
 
   @observable
@@ -44,6 +47,27 @@ abstract class _ProjectViewModelBase with Store {
       hasError = false;
       errorMessage = null;
       projectList = [];
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  @action
+  Future<void> getProjectById(int id) async {
+    isLoading = true;
+    hasError = false;
+    errorMessage = null;
+    try {
+      final project = await _projectRepository.getProjectById(id);
+      if (project != null) {
+        singleProject = project;
+      } else {
+        hasError = true;
+        errorMessage = 'Proje bulunamadı';
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = 'Proje yüklenirken hata oluştu';
     } finally {
       isLoading = false;
     }

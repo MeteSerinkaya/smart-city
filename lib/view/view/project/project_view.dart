@@ -3,6 +3,10 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_city/view/viewmodel/project/project_view_model.dart';
 import 'package:smart_city/view/authentication/test/model/project/project_model.dart';
+import 'package:smart_city/core/components/cards/unified_info_card.dart';
+import 'package:smart_city/core/components/carousel/sliding_window_carousel.dart';
+import 'package:go_router/go_router.dart';
+import 'package:smart_city/core/components/particles/particle_background.dart';
 
 class ProjectView extends StatefulWidget {
   const ProjectView({super.key});
@@ -42,7 +46,7 @@ class _ProjectViewState extends State<ProjectView> {
           return _buildEmptyState();
         }
 
-        return _buildProjectSection(viewModel.projectList!);
+        return _buildProjectSectionWithHeader(viewModel.projectList!);
       },
     );
   }
@@ -94,10 +98,7 @@ class _ProjectViewState extends State<ProjectView> {
             onPressed: () => viewModel.retryFetchProjects(),
             icon: const Icon(Icons.refresh),
             label: const Text('Tekrar Dene'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
-              foregroundColor: Colors.white,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF3B82F6), foregroundColor: Colors.white),
           ),
         ],
       ),
@@ -135,190 +136,198 @@ class _ProjectViewState extends State<ProjectView> {
     );
   }
 
+  Widget _buildProjectSectionWithHeader(List<ProjectModel> projects) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 1400),
+      child: Stack(
+        children: [
+          // Parçacık animasyonu arka planda
+          Positioned.fill(
+            child: ParticleBackground(
+              particleColor: Colors.white,
+              particleCount: isMobile ? 25 : 40,
+              speed: 0.2,
+              opacity: 0.12,
+            ),
+          ),
+          
+          // Ana içerik
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 24 : 64, vertical: isMobile ? 32 : 80),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Başlık ve TÜMÜNÜ GÖRÜNTÜLE bölümü
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'PROJELER',
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: isMobile ? 28 : 36,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    _buildSeeAllButton(context, isMobile),
+                  ],
+                ),
+                const SizedBox(height: 32),
+
+                // Projeler Kaydırmalı Pencere
+                _buildProjectCarousel(projects),
+
+                const SizedBox(height: 32),
+
+                // Footer Text
+                _buildFooterText(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProjectSection(List<ProjectModel> projects) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
-    final isTablet = screenWidth < 1024;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: constraints.maxWidth > 1200 ? 1200 : constraints.maxWidth,
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.work_outline, color: Color(0xFF3B82F6), size: 24),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Projeler',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white, // Changed to white for better contrast
-                              ),
-                            ),
-                            Text(
-                              'Şehrimizin gelişim projeleri',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withOpacity(0.7), // Changed for better contrast
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
+        int crossAxisCount = 1;
+        if (constraints.maxWidth > 1400) {
+          crossAxisCount = 4;
+        } else if (constraints.maxWidth > 1000) {
+          crossAxisCount = 3;
+        } else if (constraints.maxWidth > 700) {
+          crossAxisCount = 2;
+        }
 
-                  // Projects Grid
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: isMobile ? 1 : (isTablet ? 2 : 3),
-                      crossAxisSpacing: 24,
-                      mainAxisSpacing: 24,
-                      childAspectRatio: isMobile ? 1.2 : 1.1,
-                    ),
-                    itemCount: projects.length,
-                    itemBuilder: (context, index) {
-                      final project = projects[index];
-                      return _buildProjectCard(project);
-                    },
-                  ),
-                ],
-              ),
-            ),
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 24, // Standardized spacing
+            mainAxisSpacing: 24, // Standardized spacing
+            childAspectRatio: 0.75, // Standardized aspect ratio for consistent card proportions
           ),
+          itemCount: projects.length,
+          itemBuilder: (context, index) {
+            final project = projects[index];
+            return _buildProjectCard(project);
+          },
         );
       },
     );
   }
 
-  Widget _buildProjectCard(ProjectModel project) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+  Widget _buildProjectGrid(List<ProjectModel> projects) {
+    return SlidingWindowCarousel<ProjectModel>(
+      items: projects,
+      maxVisible: 3,
+      enableLoop: true,
+      gap: 24,
+      itemAspectRatio: 0.9,
+      itemBuilder: (context, project, index) => Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: _buildProjectCard(project),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Project Image
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: project.imageUrl != null && project.imageUrl!.isNotEmpty
-                  ? Image.network(
-                      project.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: const Color(0xFFF3F4F6),
-                          child: const Icon(
-                            Icons.work_outline,
-                            color: Color(0xFF9CA3AF),
-                            size: 48,
-                          ),
-                        );
-                      },
-                    )
-                  : Container(
-                      color: const Color(0xFFF3F4F6),
-                      child: const Icon(
-                        Icons.work_outline,
-                        color: Color(0xFF9CA3AF),
-                        size: 48,
-                      ),
-                    ),
-            ),
-          ),
+    );
+  }
 
-          // Project Content
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    project.title ?? 'Başlıksız Proje',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF111827),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+  Widget _buildProjectCarousel(List<ProjectModel> projects) => _buildProjectGrid(projects);
+
+  Widget _buildProjectCard(ProjectModel project) {
+    return UnifiedInfoCard(
+      imageUrl: project.imageUrl,
+      fallbackIcon: Icons.work_outline,
+      title: project.title ?? 'Başlıksız Proje',
+      description: project.description,
+      contentPadding: const EdgeInsets.all(16),
+      bottomRowChildren: [
+        const Icon(Icons.check_circle, size: 12, color: Color(0xFF10B981)),
+        const SizedBox(width: 4),
+        const Expanded(
+          child: Text('Aktif', style: TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
+        ),
+        TextButton.icon(
+          onPressed: () => context.go('/projects/${project.id ?? ''}') ,
+          icon: const Icon(Icons.arrow_forward, size: 16),
+          label: const Text('Detay'),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF0A4A9D)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSeeAllButton(BuildContext context, bool isMobile) {
+    bool hovered = false;
+    return StatefulBuilder(builder: (context, setLocal) {
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setLocal(() => hovered = true),
+        onExit: (_) => setLocal(() => hovered = false),
+        child: GestureDetector(
+          onTap: () => context.go('/projects-detail'),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            transform: Matrix4.identity()..translate(0.0, hovered ? -2.0 : 0.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2C),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
+              boxShadow: hovered
+                  ? [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 3))]
+                  : [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 6, offset: const Offset(0, 2))],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'asset/icons/project-management.png',
+                  width: 16,
+                  height: 16,
+                  color: Colors.white,
+                  colorBlendMode: BlendMode.srcIn,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'TÜMÜNÜ GÖRÜNTÜLE',
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
                   ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: Text(
-                      project.description ?? 'Açıklama bulunmuyor',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF6B7280),
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'Aktif',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF3B82F6),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: const Color(0xFF9CA3AF),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildFooterText() {
+    return Center(
+      child: Text(
+        'Daha fazla proje için takipte kalın',
+        style: TextStyle(
+          fontFamily: 'Roboto',
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: Colors.white.withOpacity(0.7),
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }

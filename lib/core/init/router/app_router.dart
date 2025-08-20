@@ -45,12 +45,54 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/news', builder: (context, state) => const NewsView()),
     GoRoute(path: '/events', builder: (context, state) => const EventView()),
     GoRoute(path: '/announcements', builder: (context, state) => const AnnouncementView()),
+    GoRoute(path: '/city-services', builder: (context, state) => const CityServiceDetailView()),
+    GoRoute(path: '/projects', builder: (context, state) => const ProjectDetailView()),
     GoRoute(path: '/admin', builder: (context, state) => const AdminPanelView()),
     // Detay sayfaları
     GoRoute(path: '/announcements-detail', builder: (context, state) => const AnnouncementDetailView()),
+    GoRoute(
+      path: '/announcements/:id',
+      builder: (context, state) {
+        final idParam = state.pathParameters['id'];
+        final int? id = idParam != null ? int.tryParse(idParam) : null;
+        return AnnouncementDetailView(announcementId: id);
+      },
+    ),
     GoRoute(path: '/events-detail', builder: (context, state) => const EventDetailView()),
+    GoRoute(
+      path: '/events/:id',
+      builder: (context, state) {
+        final idParam = state.pathParameters['id'];
+        final int? id = idParam != null ? int.tryParse(idParam) : null;
+        return EventDetailView(eventId: id);
+      },
+    ),
     GoRoute(path: '/news-detail', builder: (context, state) => const NewsDetailView()),
+    GoRoute(
+      path: '/news/:id',
+      builder: (context, state) {
+        final idParam = state.pathParameters['id'];
+        final int? id = idParam != null ? int.tryParse(idParam) : null;
+        return NewsDetailView(newsId: id);
+      },
+    ),
     GoRoute(path: '/city-services-detail', builder: (context, state) => const CityServiceDetailView()),
+    GoRoute(
+      path: '/city-services/:id',
+      builder: (context, state) {
+        final idParam = state.pathParameters['id'];
+        final int? id = idParam != null ? int.tryParse(idParam) : null;
+        return CityServiceDetailView(serviceId: id);
+      },
+    ),
     GoRoute(path: '/projects-detail', builder: (context, state) => const ProjectDetailView()),
+    GoRoute(
+      path: '/projects/:id',
+      builder: (context, state) {
+        final idParam = state.pathParameters['id'];
+        final int? id = idParam != null ? int.tryParse(idParam) : null;
+        return ProjectDetailView(projectId: id);
+      },
+    ),
   ],
 );

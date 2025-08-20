@@ -3,6 +3,7 @@ import 'package:smart_city/view/authentication/test/model/citymodel/city_service
 
 abstract class ICityServiceRepository {
   Future<List<CityServiceModel>?> getCityServices();
+  Future<CityServiceModel?> getCityServiceById(int id);
   Future<CityServiceModel?> addCityService(CityServiceModel model);
   Future<CityServiceModel?> updateCityService(CityServiceModel model);
   Future<bool> deleteCityService(int id);
@@ -16,6 +17,11 @@ class CityServiceRepository extends ICityServiceRepository {
   @override
   Future<List<CityServiceModel>?> getCityServices() async {
     return await _cityServiceService.fetchCityServices();
+  }
+
+  @override
+  Future<CityServiceModel?> getCityServiceById(int id) async {
+    return await _cityServiceService.getCityServiceById(id);
   }
 
   @override

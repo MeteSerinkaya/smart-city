@@ -3,6 +3,7 @@ import 'package:smart_city/view/authentication/test/model/eventmodel/event_model
 
 abstract class IEventService {
   Future<List<EventModel>?> fetchEvents();
+  Future<EventModel?> getEventById(int id);
   Future<EventModel?> addEvent(EventModel model);
   Future<EventModel?> updateEvent(EventModel model);
   Future<bool> deleteEvent(int id);
@@ -19,6 +20,20 @@ class EventService extends IEventService {
       return null;
     } catch (e) {
       print("EventService fetchEvents error: $e");
+      return null;
+    }
+  }
+
+  @override
+  Future<EventModel?> getEventById(int id) async {
+    try {
+      final response = await NetworkManager.instance.dioGet('events/$id', EventModel());
+      if (response != null && response is EventModel) {
+        return response;
+      }
+      return null;
+    } catch (e) {
+      print("EventService getEventById error: $e");
       return null;
     }
   }

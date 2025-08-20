@@ -18,6 +18,9 @@ abstract class _CityServiceViewModelBase with Store {
   List<CityServiceModel>? cityServiceList;
 
   @observable
+  CityServiceModel? singleCityService;
+
+  @observable
   String? errorMessage;
 
   @observable
@@ -44,6 +47,27 @@ abstract class _CityServiceViewModelBase with Store {
       hasError = false;
       errorMessage = null;
       cityServiceList = [];
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  @action
+  Future<void> getCityServiceById(int id) async {
+    isLoading = true;
+    hasError = false;
+    errorMessage = null;
+    try {
+      final service = await _cityServiceRepository.getCityServiceById(id);
+      if (service != null) {
+        singleCityService = service;
+      } else {
+        hasError = true;
+        errorMessage = 'Hizmet bulunamadı';
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = 'Hizmet yüklenirken hata oluştu';
     } finally {
       isLoading = false;
     }

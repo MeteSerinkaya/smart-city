@@ -18,6 +18,9 @@ abstract class _NewsViewModelBase with Store {
   List<NewsModel>? newsList;
 
   @observable
+  NewsModel? singleNews;
+
+  @observable
   String? errorMessage;
 
   @observable
@@ -52,6 +55,28 @@ abstract class _NewsViewModelBase with Store {
   @action
   Future<void> retryFetchNews() async {
     await fetchNews();
+  }
+
+  @action
+  Future<void> getNewsById(int id) async {
+    isLoading = true;
+    hasError = false;
+    errorMessage = null;
+    
+    try {
+      final news = await _newsRepository.getNewsById(id);
+      if (news != null) {
+        singleNews = news;
+      } else {
+        hasError = true;
+        errorMessage = 'Haber bulunamadı';
+      }
+    } catch (e) {
+      hasError = true;
+      errorMessage = 'Haber yüklenirken hata oluştu';
+    } finally {
+      isLoading = false;
+    }
   }
 
   @action

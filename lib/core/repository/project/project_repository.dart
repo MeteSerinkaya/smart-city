@@ -3,6 +3,7 @@ import 'package:smart_city/core/service/project/project_service.dart';
 
 abstract class IProjectRepository {
   Future<List<ProjectModel>?> getProjects();
+  Future<ProjectModel?> getProjectById(int id);
   Future<ProjectModel?> addProject(ProjectModel model);
   Future<ProjectModel?> updateProject(ProjectModel model);
   Future<bool> deleteProject(int id);
@@ -16,6 +17,11 @@ class ProjectRepository extends IProjectRepository {
   @override
   Future<List<ProjectModel>?> getProjects() async {
     return await _projectService.fetchProjects();
+  }
+
+  @override
+  Future<ProjectModel?> getProjectById(int id) async {
+    return await _projectService.getProjectById(id);
   }
 
   @override

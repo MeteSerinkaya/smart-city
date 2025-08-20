@@ -3,6 +3,7 @@ import 'package:smart_city/view/authentication/test/model/newsmodel/news_model.d
 
 abstract class INewsService {
   Future<List<NewsModel>?> fetchNews();
+  Future<NewsModel?> getNewsById(int id);
   Future<NewsModel?> addNews(NewsModel model);
   Future<NewsModel?> updateNews(NewsModel model);
   Future<bool> deleteNews(int id);
@@ -12,13 +13,42 @@ class NewsService extends INewsService {
   @override
   Future<List<NewsModel>?> fetchNews() async {
     try {
-      final response = await NetworkManager.instance.dioGet('news', NewsModel());
+      // Tüm haberleri almak için sınırsız pageSize kullan
+      final response = await NetworkManager.instance.dioGet('news?pageSize=1000', NewsModel());
       if (response != null && response is List) {
         return response.cast<NewsModel>();
       }
       return null;
     } catch (e) {
       print("NewsService fetchNews error: $e");
+      return null;
+    }
+  }
+
+  @override
+  Future<NewsModel?> getNewsById(int id) async {
+    try {
+      final response = await NetworkManager.instance.dioGet('news/$id', NewsModel());
+      if (response != null && response is NewsModel) {
+        return response;
+      }
+      return null;
+    } catch (e) {
+      print("NewsService getNewsById error: $e");
+      return null;
+    }
+  }
+
+  // Tüm haberleri almak için yeni metod
+  Future<List<NewsModel>?> fetchAllNews() async {
+    try {
+      final response = await NetworkManager.instance.dioGet('news/all', NewsModel());
+      if (response != null && response is List) {
+        return response.cast<NewsModel>();
+      }
+      return null;
+    } catch (e) {
+      print("NewsService fetchAllNews error: $e");
       return null;
     }
   }
