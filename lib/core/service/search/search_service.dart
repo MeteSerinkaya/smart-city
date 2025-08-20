@@ -29,6 +29,12 @@ class SearchService extends ISearchService {
         // Add news results
         if (data['news'] != null) {
           for (var news in data['news']) {
+            print('🔍 NEWS DEBUG: ${news.toString()}');
+            print('🔍 NEWS imageUrl: ${news['imageUrl']}');
+            print('🔍 NEWS image: ${news['image']}');
+            print('🔍 NEWS heroImageUrl: ${news['heroImageUrl']}');
+            print('🔍 NEWS heroImage: ${news['heroImage']}');
+            
             results.add(SearchModel(
               id: news['id'],
               title: news['title'],
@@ -58,6 +64,12 @@ class SearchService extends ISearchService {
         // Add project results
         if (data['projects'] != null) {
           for (var project in data['projects']) {
+            print('🔍 PROJECT DEBUG: ${project.toString()}');
+            print('🔍 PROJECT imageUrl: ${project['imageUrl']}');
+            print('🔍 PROJECT image: ${project['image']}');
+            print('🔍 PROJECT heroImageUrl: ${project['heroImageUrl']}');
+            print('🔍 PROJECT heroImage: ${project['heroImage']}');
+            
             results.add(SearchModel(
               id: project['id'],
               title: project['title'],
@@ -72,6 +84,13 @@ class SearchService extends ISearchService {
         // Add city service results
         if (data['cityServices'] != null) {
           for (var service in data['cityServices']) {
+            print('🔍 CITY SERVICE DEBUG: ${service.toString()}');
+            print('🔍 CITY SERVICE imageUrl: ${service['imageUrl']}');
+            print('🔍 CITY SERVICE image: ${service['image']}');
+            print('🔍 CITY SERVICE heroImageUrl: ${service['heroImageUrl']}');
+            print('🔍 CITY SERVICE heroImage: ${service['heroImage']}');
+            print('🔍 CITY SERVICE iconUrl: ${service['iconUrl']}');
+            
             results.add(SearchModel(
               id: service['id'],
               title: service['title'],
