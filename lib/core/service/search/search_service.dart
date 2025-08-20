@@ -17,7 +17,7 @@ abstract class ISearchService {
 }
 
 class SearchService extends ISearchService {
-    String _buildFullImageUrl(String? imagePath) {
+    String _buildFullImageUrl(String? imagePath, {String? category}) {
     if (imagePath == null || imagePath.isEmpty) return '';
  
     // Eğer zaten tam URL ise (http:// veya https:// ile başlıyorsa) direkt döndür
@@ -29,9 +29,24 @@ class SearchService extends ISearchService {
     final baseUrl = AppConstants.baseUrl;
     // Base URL'in sonunda /api/ varsa kaldır, sadece domain kalsın
     final cleanBaseUrl = baseUrl.replaceAll('/api/', '');
-    final cleanImagePath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-    final fullUrl = '$cleanBaseUrl/$cleanImagePath';
     
+    // Kategoriye göre path belirle
+    String finalPath;
+    if (category == 'news') {
+      // Haberler için /upload/ path'i kullan
+      finalPath = 'upload/$imagePath';
+    } else if (category == 'project') {
+      // Projeler için /upload/ path'i kullan
+      finalPath = 'upload/$imagePath';
+    } else if (category == 'city_service') {
+      // Şehir hizmetleri için /upload/ path'i kullan
+      finalPath = 'upload/$imagePath';
+    } else {
+      // Diğer kategoriler için direkt path kullan
+      finalPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    }
+    
+    final fullUrl = '$cleanBaseUrl/$finalPath';
     return fullUrl;
   }
 
@@ -56,6 +71,7 @@ class SearchService extends ISearchService {
                 // Relative path'i tam URL'e çevir
                 imageUrl: _buildFullImageUrl(
                   news['imageUrl'] ?? news['image'] ?? news['heroImageUrl'] ?? news['heroImage'],
+                  category: 'news',
                 ),
                 type: 'news',
                 publishedAt: news['publishedAt'] != null ? DateTime.tryParse(news['publishedAt']) : null,
@@ -91,6 +107,7 @@ class SearchService extends ISearchService {
                 // Relative path'i tam URL'e çevir
                 imageUrl: _buildFullImageUrl(
                   project['imageUrl'] ?? project['image'] ?? project['heroImageUrl'] ?? project['heroImage'],
+                  category: 'project',
                 ),
                 type: 'project',
               ),
@@ -107,8 +124,8 @@ class SearchService extends ISearchService {
                 title: service['title'],
                 description: service['description'],
                 // Şehir hizmetleri için iconUrl'i imageUrl olarak kullan
-                imageUrl: _buildFullImageUrl(service['iconUrl']),
-                iconUrl: _buildFullImageUrl(service['iconUrl']),
+                imageUrl: _buildFullImageUrl(service['iconUrl'], category: 'city_service'),
+                iconUrl: _buildFullImageUrl(service['iconUrl'], category: 'city_service'),
                 type: 'city_service',
               ),
             );
