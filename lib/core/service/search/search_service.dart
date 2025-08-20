@@ -28,9 +28,15 @@ class SearchService extends ISearchService {
  
     // Relative path ise base URL ile birleştir
     final baseUrl = AppConstants.baseUrl;
-    final fullUrl = imagePath.startsWith('/') ? '$baseUrl$imagePath' : '$baseUrl/$imagePath';
+    // Base URL'in sonunda / varsa kaldır, relative path'in başında / varsa kaldır
+    final cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    final cleanImagePath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    final fullUrl = '$cleanBaseUrl/$cleanImagePath';
+    
     print('🔍 RELATIVE PATH: $imagePath');
     print('🔍 BASE URL: $baseUrl');
+    print('🔍 CLEAN BASE URL: $cleanBaseUrl');
+    print('🔍 CLEAN IMAGE PATH: $cleanImagePath');
     print('🔍 FULL URL (oluşturulan): $fullUrl');
     return fullUrl;
   }
@@ -107,11 +113,7 @@ class SearchService extends ISearchService {
         // Add city service results
         if (data['cityServices'] != null) {
           for (var service in data['cityServices']) {
-            final serviceImageUrl = _buildFullImageUrl(
-              service['imageUrl'] ?? service['image'] ?? service['heroImageUrl'] ?? service['heroImage'],
-            );
             final serviceIconUrl = _buildFullImageUrl(service['iconUrl']);
-            print('🔍 CITY SERVICE FINAL imageUrl: $serviceImageUrl');
             print('🔍 CITY SERVICE FINAL iconUrl: $serviceIconUrl');
             
             results.add(
@@ -119,8 +121,8 @@ class SearchService extends ISearchService {
                 id: service['id'],
                 title: service['title'],
                 description: service['description'],
-                // Relative path'i tam URL'e çevir
-                imageUrl: serviceImageUrl,
+                // Şehir hizmetleri için iconUrl'i imageUrl olarak kullan
+                imageUrl: serviceIconUrl,
                 iconUrl: serviceIconUrl,
                 type: 'city_service',
               ),
